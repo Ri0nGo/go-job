@@ -2,7 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"github.com/gin-gonic/gin"
 	"go-job/node/pkg/config"
+	"go-job/node/router"
 )
 
 func main() {
@@ -15,4 +18,11 @@ func main() {
 		panic(err)
 	}
 
+	runWeb()
+}
+
+func runWeb() {
+	engine := gin.Default()
+	router.RegistryRoute(engine)
+	engine.Run(fmt.Sprintf("%s:%d", config.App.Config.Ip, config.App.Config.Port))
 }
