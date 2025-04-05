@@ -3,10 +3,10 @@ package config
 var App *Application
 
 type Application struct {
-	Config Config
+	Server Server
 }
 
-type Config struct {
+type Server struct {
 	Port uint16
 	Name string
 	Ip   string

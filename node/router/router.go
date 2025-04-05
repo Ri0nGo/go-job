@@ -3,10 +3,14 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 	"go-job/node/api"
+	"go-job/node/service"
 )
 
-func RegistryRoute(engine *gin.Engine) {
-	apiG := engine.Group("/api/")
+func InitRouter(engine *gin.Engine) {
+	group := engine.Group("/api/go-job/")
 
-	apiG.POST("/job/add", api.AddJob)
+	jobService := service.NewJobService()
+	jh := api.NewJobHandler(jobService)
+	jh.RegisterRoutes(group)
+
 }

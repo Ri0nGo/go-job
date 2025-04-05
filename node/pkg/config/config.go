@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/spf13/viper"
+	"log"
 )
 
 func InitConfig(filePath string) error {
@@ -22,7 +23,7 @@ func loadConfig(filePath string) (*Application, error) {
 	var app Application
 	err = viper.Unmarshal(&app)
 	if err != nil {
-		return nil, err
+		log.Fatalf("Error unmarshaling config, %s", err)
 	}
 	return &app, nil
 }

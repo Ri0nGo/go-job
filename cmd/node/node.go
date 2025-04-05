@@ -23,6 +23,6 @@ func main() {
 
 func runWeb() {
 	engine := gin.Default()
-	router.RegistryRoute(engine)
-	engine.Run(fmt.Sprintf("%s:%d", config.App.Config.Ip, config.App.Config.Port))
+	router.InitRouter(engine)
+	engine.Run(fmt.Sprintf("%s:%d", config.App.Server.Ip, config.App.Server.Port))
 }
