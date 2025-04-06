@@ -2,20 +2,31 @@ package job
 
 import (
 	"context"
+	"fmt"
 	"github.com/robfig/cron/v3"
+	"go-job/internal/dto"
 	"go-job/internal/models"
 	"go-job/node/pkg/executor"
 	"sync"
+	"time"
 )
+
+type JobMeta struct {
+	Id       int             `json:"id"`
+	Name     string          `json:"name"`      // 任务名称
+	ExecType models.ExecType `json:"exec_type"` // 任务类型
+	Crontab  string          `json:"crontab"`   // crontab 表达式
+	FileName string          `json:"file_name"` // 本地存储的文件名
+}
 
 type Job struct {
 	Ctx           context.Context
 	Cancel        context.CancelFunc
-	JobDAO        models.Job
+	JobMeta       JobMeta
 	Executor      executor.IExecutor
 	Cron          *cron.Cron
 	CronEntryID   cron.EntryID
-	RunningStatus JobStatus
+	RunningStatus models.JobStatus
 }
 
 // JobManager 全局job管理
@@ -31,7 +42,7 @@ var jm = &JobManager{
 func AddJob(job *Job) {
 	jm.mux.Lock()
 	defer jm.mux.Unlock()
-	jm.jobs[job.JobDAO.Id] = job
+	jm.jobs[job.JobMeta.Id] = job
 }
 
 func RemoveJob(id int) {
@@ -57,25 +68,36 @@ func GetAllJobs() []*Job {
 	return jobs
 }
 
-func NewJob(ctx context.Context, cancel context.CancelFunc, job models.Job, iExecutor executor.IExecutor) *Job {
+func NewJob(ctx context.Context, cancel context.CancelFunc, req dto.ReqJob, iExecutor executor.IExecutor) *Job {
 	return &Job{
-		Ctx:           ctx,
-		Cancel:        cancel,
-		JobDAO:        job,
+		Ctx:    ctx,
+		Cancel: cancel,
+		JobMeta: JobMeta{
+			Id:       req.Id,
+			Name:     req.Name,
+			ExecType: req.ExecType,
+			Crontab:  req.Crontab,
+			FileName: req.Filename,
+		},
 		Executor:      iExecutor,
-		RunningStatus: Pending,
+		RunningStatus: models.Pending,
 	}
 }
 
 func (j *Job) ParseCrontab() error {
 	c := cron.New(cron.WithSeconds())
-	entryID, err := c.AddJob(j.JobDAO.Crontab, j.Executor)
+	entryID, err := c.AddJob(j.JobMeta.Crontab, j.Executor)
 	if err != nil {
 		return err
 	}
 	j.Cron = c
 	j.CronEntryID = entryID
 	return nil
+}
+
+func (j *Job) OnStatusChange(status models.JobStatus) {
+	j.RunningStatus = status
+	fmt.Println(time.Now().Format(time.DateTime), "\tjob status:", status.String())
 }
 
 func (j *Job) Start() {

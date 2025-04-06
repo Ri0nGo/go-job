@@ -19,13 +19,23 @@ const (
 const (
 	CodeSuccess = 0
 
+	// 固定错误码
 	AuthError         = 401
 	UnauthorizedError = 403
 	NotFound          = 404
 	ServerError       = 500
+)
 
-	// 1000 ~ 1099 公共错误码
+const (
+	// 1000 ~ 1009 公共参数错误码
 	ParamsError = 1000
+
+	// 1010 ~ 1019 db 相关错误
+	// 1030 ~ 1040 文件相关错误
+	FileNotExist      = 1030
+	UploadFileError   = 1031
+	FileExtNotSupport = 1032
+	FileValidError    = 1033
 )
 
 var (
@@ -43,6 +53,10 @@ var msgMap = map[int]string{
 	NotFound:          "not found",
 	ServerError:       "server error",
 	UnauthorizedError: "unauthorized",
+	UploadFileError:   "upload file error",
+	FileNotExist:      "file not exist",
+	FileExtNotSupport: "file ext not support",
+	FileValidError:    "file valid error",
 }
 
 func getMsgWithCode(code int) string {
