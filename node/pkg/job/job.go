@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"github.com/robfig/cron/v3"
 	"go-job/internal/dto"
-	"go-job/internal/models"
+	"go-job/internal/model"
 	"go-job/node/pkg/executor"
 	"sync"
 	"time"
 )
 
 type JobMeta struct {
-	Id       int             `json:"id"`
-	Name     string          `json:"name"`      // 任务名称
-	ExecType models.ExecType `json:"exec_type"` // 任务类型
-	Crontab  string          `json:"crontab"`   // crontab 表达式
-	FileName string          `json:"file_name"` // 本地存储的文件名
+	Id       int            `json:"id"`
+	Name     string         `json:"name"`      // 任务名称
+	ExecType model.ExecType `json:"exec_type"` // 任务类型
+	CronExpr string         `json:"cron_expr"` // crontab 表达式
+	FileName string         `json:"file_name"` // 本地存储的文件名
 }
 
 type Job struct {
@@ -26,7 +26,7 @@ type Job struct {
 	Executor      executor.IExecutor
 	Cron          *cron.Cron
 	CronEntryID   cron.EntryID
-	RunningStatus models.JobStatus
+	RunningStatus model.JobStatus
 }
 
 // JobManager 全局job管理
@@ -76,17 +76,17 @@ func NewJob(ctx context.Context, cancel context.CancelFunc, req dto.ReqJob, iExe
 			Id:       req.Id,
 			Name:     req.Name,
 			ExecType: req.ExecType,
-			Crontab:  req.Crontab,
+			CronExpr: req.CronExpr,
 			FileName: req.Filename,
 		},
 		Executor:      iExecutor,
-		RunningStatus: models.Pending,
+		RunningStatus: model.Pending,
 	}
 }
 
-func (j *Job) ParseCrontab() error {
+func (j *Job) BuildCrontab() error {
 	c := cron.New(cron.WithSeconds())
-	entryID, err := c.AddJob(j.JobMeta.Crontab, j.Executor)
+	entryID, err := c.AddJob(j.JobMeta.CronExpr, j.Executor)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (j *Job) ParseCrontab() error {
 	return nil
 }
 
-func (j *Job) OnStatusChange(status models.JobStatus) {
+func (j *Job) OnStatusChange(status model.JobStatus) {
 	j.RunningStatus = status
 	fmt.Println(time.Now().Format(time.DateTime), "\tjob status:", status.String())
 }

@@ -28,7 +28,7 @@ func NewJobHandler(jobService service.IJobService) *JobHandler {
 func (h *JobHandler) RegisterRoutes(server *gin.RouterGroup) {
 	jh := server.Group("/jobs")
 	jh.POST("/add", h.AddJob)
-	jh.DELETE(":id", h.DeleteJob)
+	jh.DELETE("/:id", h.DeleteJob)
 	jh.PUT("", h.UpdateJob)
 	jh.GET("", h.GetJob)
 	//jh.GET("", h.GetJobList)
@@ -145,43 +145,3 @@ func (h *JobHandler) UploadFile(ctx *gin.Context) {
 
 	dto.NewJsonResp(ctx).Success()
 }
-
-// UploadFile 保存上传的文件(master 用的)
-/*func (h *JobHandler) UploadFileBak(ctx *gin.Context) {
-	file, err := ctx.FormFile("file")
-	if err != nil {
-		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
-		return
-	}
-
-	// todo 这里后续如果新增了其他的错误，需要额外调整响应
-	if err = h.validJobUploadFile(file); err != nil {
-		dto.NewJsonResp(ctx).Fail(dto.FileExtNotSupport)
-		return
-	}
-
-	if err = utils.EnsureDir(config.App.Data.TmpData); err != nil {
-		slog.Error("file dir create error", "err", err)
-		dto.NewJsonResp(ctx).Fail(dto.UploadFileError)
-		return
-	}
-
-	// 保存文件
-	savePath := fmt.Sprintf("%s/%s", config.App.Data.TmpData, file.Filename)
-	if err := ctx.SaveUploadedFile(file, savePath); err != nil {
-		slog.Error("save file error", "err", err)
-		dto.NewJsonResp(ctx).Fail(dto.UploadFileError)
-		return
-	}
-
-	tempKey := uuid.New().String()
-	upload.SetFileMeta(tempKey, upload.FileMeta{
-		Filename: file.Filename,
-		Filepath: savePath,
-		Uploaded: time.Now(),
-	})
-
-	dto.NewJsonResp(ctx).Success(map[string]string{
-		"key": tempKey,
-	})
-}*/

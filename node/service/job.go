@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"go-job/internal/dto"
-	"go-job/internal/models"
+	"go-job/internal/model"
 	"go-job/node/pkg/executor"
 	"go-job/node/pkg/job"
 )
@@ -37,7 +37,7 @@ func (s *JobService) AddJob(ctx context.Context, req dto.ReqJob) error {
 	// 构造job对象
 	ctx, cancel := context.WithCancel(ctx)
 	jj := job.NewJob(ctx, cancel, req, exec)
-	if err = jj.ParseCrontab(); err != nil {
+	if err = jj.BuildCrontab(); err != nil {
 		return err
 	}
 	// 设置状态回调事件
@@ -86,7 +86,7 @@ func (s *JobService) newExecutor(ctx context.Context, req dto.ReqJob) (executor.
 	var exec executor.IExecutor
 
 	switch req.ExecType {
-	case models.ExecTypeFile:
+	case model.ExecTypeFile:
 		exec = executor.NewFileExecutor(req.Filename)
 	default:
 		return nil, errors.New("invalid exec type")

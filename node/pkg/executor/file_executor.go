@@ -3,7 +3,7 @@ package executor
 import (
 	"errors"
 	"fmt"
-	"go-job/internal/models"
+	"go-job/internal/model"
 	"go-job/node/pkg/config"
 	"os/exec"
 	"path/filepath"
@@ -12,16 +12,16 @@ import (
 type FileExecutor struct {
 	ext            string
 	fileName       string
-	OnStatusChange func(status models.JobStatus) // 注册回调事件， 后续可以优化为channel的方式接收结果
+	OnStatusChange func(status model.JobStatus) // 注册回调事件， 后续可以优化为channel的方式接收结果
 }
 
 func (f *FileExecutor) Run() {
-	f.OnStatusChange(models.Running)
+	f.OnStatusChange(model.Running)
 	if err := f.Execute(); err != nil {
-		f.OnStatusChange(models.Failed)
+		f.OnStatusChange(model.Failed)
 		return
 	}
-	f.OnStatusChange(models.Success)
+	f.OnStatusChange(model.Success)
 
 }
 
@@ -53,7 +53,7 @@ func NewFileExecutor(fileName string) *FileExecutor {
 	}
 }
 
-func (f *FileExecutor) SetOnStatusChange(fn func(status models.JobStatus)) {
+func (f *FileExecutor) SetOnStatusChange(fn func(status model.JobStatus)) {
 	f.OnStatusChange = fn
 }
 
