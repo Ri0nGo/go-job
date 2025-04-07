@@ -7,7 +7,7 @@ import (
 )
 
 func InitRouter(engine *gin.Engine) {
-	group := engine.Group("/api/go-job/")
+	group := engine.Group("/api/go-job/node")
 
 	jobService := service.NewJobService()
 	jh := api.NewJobHandler(jobService)

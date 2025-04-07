@@ -27,3 +27,17 @@ node
 ├── router               # 路由
 └── service              # 服务层
 ```
+
+### master 目录结构
+
+```shell
+├─api              # api 接口
+├─database         # 数据库，DAO层
+├─pkg 
+│  ├─config        # 配置文件
+│  ├─ioc           # 依赖注入， wire
+│  └─middleware    # 中间件
+├─repo             # repo层
+├─router           # 路由层
+└─service          # service层
+```
