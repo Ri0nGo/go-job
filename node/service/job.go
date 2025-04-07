@@ -9,8 +9,15 @@ import (
 	"go-job/node/pkg/job"
 )
 
+var (
+	errJobNotFound = errors.New("job not found")
+)
+
 type IJobService interface {
 	AddJob(ctx context.Context, req dto.ReqJob) error
+	DeleteJob(ctx context.Context, id int)
+	UpdateJob(ctx context.Context, req dto.ReqJob) error
+	GetJob(ctx context.Context, id int) (*job.Job, error)
 }
 
 type JobService struct {
@@ -39,6 +46,40 @@ func (s *JobService) AddJob(ctx context.Context, req dto.ReqJob) error {
 
 	job.AddJob(jj)
 	return nil
+}
+
+func (s *JobService) DeleteJob(ctx context.Context, id int) {
+	if j, err := s.GetJob(ctx, id); err == nil {
+		s.removeJob(j)
+	}
+}
+
+func (s *JobService) removeJob(j *job.Job) {
+	j.Cancel()
+	j.Stop()
+	job.RemoveJob(j.JobMeta.Id)
+}
+
+func (s *JobService) UpdateJob(ctx context.Context, req dto.ReqJob) error {
+	j, ok := job.GetJob(req.Id)
+	if !ok {
+		return errJobNotFound
+	}
+	s.removeJob(j)
+
+	if err := s.AddJob(ctx, req); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *JobService) GetJob(ctx context.Context, id int) (*job.Job, error) {
+	j, ok := job.GetJob(id)
+	if !ok {
+		return nil, errJobNotFound
+	}
+	return j, nil
 }
 
 func (s *JobService) newExecutor(ctx context.Context, req dto.ReqJob) (executor.IExecutor, error) {

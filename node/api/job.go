@@ -10,6 +10,7 @@ import (
 	"go-job/node/service"
 	"log/slog"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -23,10 +24,14 @@ func NewJobHandler(jobService service.IJobService) *JobHandler {
 	}
 }
 
-// RegisterRoutes 注册job相关的路由
+// RegisterRoutes 注册job相关的路由, 遵循restful 风格
 func (h *JobHandler) RegisterRoutes(server *gin.RouterGroup) {
-	jh := server.Group("/job")
+	jh := server.Group("/jobs")
 	jh.POST("/add", h.AddJob)
+	jh.DELETE(":id", h.DeleteJob)
+	jh.PUT("", h.UpdateJob)
+	jh.GET("", h.GetJob)
+	//jh.GET("", h.GetJobList)
 }
 
 // AddJob 添加任务
@@ -43,6 +48,59 @@ func (h *JobHandler) AddJob(ctx *gin.Context) {
 		return
 	}
 
+	dto.NewJsonResp(ctx).Success()
+}
+
+func (h *JobHandler) DeleteJob(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
+		return
+	}
+
+	h.JobService.DeleteJob(ctx.Request.Context(), id)
+	dto.NewJsonResp(ctx).Success()
+}
+
+func (h *JobHandler) UpdateJob(ctx *gin.Context) {
+	var req dto.ReqJob
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
+		return
+	}
+
+	err := h.JobService.UpdateJob(ctx.Request.Context(), req)
+	if err != nil {
+		dto.NewJsonResp(ctx).Fail(dto.JobUpdateFailed)
+		return
+	}
+
+	dto.NewJsonResp(ctx).Success()
+}
+
+func (h *JobHandler) GetJob(ctx *gin.Context) {
+	var req dto.ReqId
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
+		return
+	}
+	job, err := h.JobService.GetJob(ctx.Request.Context(), req.Id)
+	if err != nil {
+		dto.NewJsonResp(ctx).Fail(dto.JobNotExist)
+		return
+	}
+	dto.NewJsonResp(ctx).Success(dto.RespJob{
+		Id:            job.JobMeta.Id,
+		Name:          job.JobMeta.Name,
+		ExecType:      job.JobMeta.ExecType,
+		RunningStatus: job.RunningStatus,
+		FileName:      job.JobMeta.FileName,
+	})
+
+}
+
+func (h *JobHandler) GetJobList(ctx *gin.Context) {
 	dto.NewJsonResp(ctx).Success()
 }
 

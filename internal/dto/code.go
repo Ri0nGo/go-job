@@ -43,8 +43,9 @@ var (
 )
 
 var (
-	JobNotExist  = genCodeMsg(jobModule, 0, "用户不存在")
-	JobAddFailed = genCodeMsg(jobModule, 1, "任务创建失败")
+	JobNotExist     = genCodeMsg(jobModule, 0, "任务不存在")
+	JobAddFailed    = genCodeMsg(jobModule, 1, "任务创建失败")
+	JobUpdateFailed = genCodeMsg(jobModule, 2, "任务更新失败")
 )
 
 var msgMap = map[int]string{

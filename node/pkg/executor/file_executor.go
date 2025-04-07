@@ -40,6 +40,9 @@ func (f *FileExecutor) Execute() error {
 
 	// todo 回传结果和执行状态
 	fmt.Println("exec result: ", string(output), err)
+
+	// todo 待实现
+	go f.sendResultToMaster()
 	return err
 }
 
@@ -60,4 +63,9 @@ func (f *FileExecutor) execFile() (output []byte, err error) {
 	// TODO 后续需要修改为实时捕获
 	cmd := exec.Command("python3", execFilePath)
 	return cmd.CombinedOutput()
+}
+
+// sendResultToMaster 回传结果到master
+func (f *FileExecutor) sendResultToMaster() {
+
 }

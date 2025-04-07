@@ -104,6 +104,6 @@ func (j *Job) Start() {
 	j.Cron.Start()
 }
 
-func (j *Job) Stop() {
-	j.Cron.Stop()
+func (j *Job) Stop() context.Context {
+	return j.Cron.Stop()
 }
