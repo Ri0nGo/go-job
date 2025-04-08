@@ -7,8 +7,8 @@ run-node:
 	@echo "running node $(APP_NODE_NAME)..."
 	go run cmd/node/node.go
 
-.PHONY: wire-gen
-wire-gen:
+.PHONY: wire
+wire:
 	wire gen master/pkg/ioc/wire.go
 
 .PHONY: run-wire-m

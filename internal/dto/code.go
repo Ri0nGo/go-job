@@ -1,6 +1,6 @@
 package dto
 
-type response struct {
+type Response struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
 	Data any    `json:"data"`
@@ -14,6 +14,8 @@ const (
 const (
 	userModule = iota + 1
 	jobModule
+	nodeModule
+	tagModule
 )
 
 const (
@@ -48,6 +50,14 @@ var (
 	JobUpdateFailed = genCodeMsg(jobModule, 2, "任务更新失败")
 	JobGetFailed    = genCodeMsg(jobModule, 3, "任务查询失败")
 	JobDeleteFailed = genCodeMsg(jobModule, 4, "任务删除失败")
+)
+
+var (
+	NodeNotExist     = genCodeMsg(jobModule, 0, "节点不存在")
+	NodeAddFailed    = genCodeMsg(jobModule, 1, "节点创建失败")
+	NodeUpdateFailed = genCodeMsg(jobModule, 2, "节点更新失败")
+	NodeGetFailed    = genCodeMsg(jobModule, 3, "节点查询失败")
+	NodeDeleteFailed = genCodeMsg(jobModule, 4, "节点删除失败")
 )
 
 var msgMap = map[int]string{

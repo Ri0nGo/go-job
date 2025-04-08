@@ -7,10 +7,10 @@ import (
 	"github.com/google/uuid"
 	"go-job/internal/dto"
 	"go-job/internal/model"
+	"go-job/internal/pkg/utils"
 	"go-job/internal/upload"
 	"go-job/master/pkg/config"
 	"go-job/master/service"
-	"go-job/node/pkg/utils"
 	"gorm.io/gorm"
 	"log/slog"
 	"path/filepath"
@@ -110,6 +110,7 @@ func (a *JobApi) UpdateJob(ctx *gin.Context) {
 	var req model.Job
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
+		return
 	}
 	if err := a.JobService.UpdateJob(req); err != nil {
 		slog.Error("update job err:", "err", err)

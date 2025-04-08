@@ -1,11 +1,17 @@
 package service
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"github.com/robfig/cron/v3"
 	"go-job/internal/model"
+	"go-job/internal/pkg/httpClient"
 	"go-job/internal/upload"
+	"go-job/master/pkg/paths"
 	"go-job/master/repo"
+	"log/slog"
+	"time"
 )
 
 type IJobService interface {
@@ -17,7 +23,8 @@ type IJobService interface {
 }
 
 type JobService struct {
-	JobRepo repo.IJobRepo
+	JobRepo  repo.IJobRepo
+	NodeRepo repo.INodeRepo
 }
 
 func (j *JobService) GetJob(id int) (model.Job, error) {
@@ -36,7 +43,49 @@ func (j *JobService) AddJob(job model.Job) error {
 	if err := j.parseCrontab(job.CronExpr); err != nil {
 		return err
 	}
-	return j.JobRepo.Inserts([]model.Job{job})
+	err := j.JobRepo.Inserts([]model.Job{job})
+	if err != nil {
+		return err
+	}
+
+	node, err := j.NodeRepo.QueryById(job.NodeID)
+	if err != nil {
+		return errors.New("node not found")
+	}
+	j.sendJobToNode(node, job)
+	return nil
+}
+
+func (j *JobService) sendJobToNode(node model.Node, job model.Job) {
+	go func() {
+		type reqJobNode struct {
+			Id       int            `json:"id"`
+			Name     string         `json:"name"`
+			ExecType model.ExecType `json:"exec_type"`
+			CronExpr string         `json:"cron_expr"`
+			Filename string         `json:"filename"`
+		}
+		req := reqJobNode{
+			Id:       job.Id,
+			Name:     job.Name,
+			ExecType: job.ExecType,
+			CronExpr: job.CronExpr,
+			Filename: job.Internal.FileMeta.UUIDFileName,
+		}
+		url := fmt.Sprintf("http://%s%s%s", node.Address,
+			paths.NodeJobAPI.BasePath, paths.NodeJobAPI.Create)
+		resp, err := httpClient.PostJson(context.Background(), url, req, 3*time.Second)
+		if err != nil {
+			slog.Error("send job to node error", "err", err)
+		}
+		nodeResp, err := httpClient.ParseResponse(resp)
+		if err != nil {
+			slog.Error("send job to node error", "err", err)
+		}
+		if nodeResp.Code != 0 {
+			slog.Error("resp code isn't zero", "resp", resp)
+		}
+	}()
 }
 
 // validExecType 创建任务的时候检测
@@ -94,8 +143,9 @@ func (j *JobService) UpdateJob(job model.Job) error {
 	return j.JobRepo.Update(job)
 }
 
-func NewJobService(jobRepo repo.IJobRepo) IJobService {
+func NewJobService(jobRepo repo.IJobRepo, nodeRepo repo.INodeRepo) IJobService {
 	return &JobService{
-		JobRepo: jobRepo,
+		JobRepo:  jobRepo,
+		NodeRepo: nodeRepo,
 	}
 }

@@ -40,13 +40,6 @@ func (j *JobRepo) Delete(id int) error {
 }
 
 func (j *JobRepo) QueryList(page model.Page) (model.Page, error) {
-	//var jobs []model.Job
-	//err := j.mysqlDB.Find(&jobs).Error
-	//if err != nil {
-	//	return page, err
-	//}
-	//page.Data = jobs
-	//return page, nil
 	return paginate.PaginateList[model.Job](j.mysqlDB, page.PageNum, page.PageSize)
 }
 

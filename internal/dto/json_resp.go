@@ -29,7 +29,7 @@ func (j *JsonResp) Fail(code int, err ...error) {
 }
 
 func (j *JsonResp) responseWithCode(code int, data any) {
-	var resp = response{
+	var resp = Response{
 		Code: code,
 		Msg:  getMsgWithCode(code),
 		Data: data,
@@ -38,7 +38,7 @@ func (j *JsonResp) responseWithCode(code int, data any) {
 }
 
 func (j *JsonResp) response(code int, msg string, data any) {
-	var resp = response{
+	var resp = Response{
 		Code: code,
 		Msg:  msg,
 		Data: data,

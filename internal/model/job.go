@@ -32,12 +32,13 @@ func (s JobStatus) String() string {
 
 type Job struct {
 	Id        int       `json:"id" gorm:"primary_key"`
-	Name      string    `json:"name"`                              // 任务名称
-	ExecType  ExecType  `json:"exec_type" gorm:"column:exec_type"` // 任务类型
-	CronExpr  string    `json:"cron_expr" gorm:"column:cron_expr"` // crontab 表达式
+	Name      string    `json:"name" binding:"required"`                              // 任务名称
+	ExecType  ExecType  `json:"exec_type" gorm:"column:exec_type" binding:"required"` // 任务类型
+	CronExpr  string    `json:"cron_expr" gorm:"column:cron_expr" binding:"required"` // crontab 表达式
 	CreatedAt time.Time `json:"created_at" gorm:"column:created_time;autoCreateTime"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"column:updated_time;autoUpdateTime"`
 	Internal  Internal  `gorm:"serializer:json;column:internal"`
+	NodeID    int       `json:"node_id" gorm:"column:node_id" binding:"required"`
 	FileName  string    `json:"filename" gorm:"-"` // 文件名
 	FileKey   string    `json:"file_key" gorm:"-"` // 文件key
 }

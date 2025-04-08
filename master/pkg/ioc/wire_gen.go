@@ -22,8 +22,11 @@ func InitWebServer() *gin.Engine {
 	v := middleware.NewGinMiddlewares()
 	db := database.NewMySQLWithGORM()
 	iJobRepo := repo.NewJobRepo(db)
-	iJobService := service.NewJobService(iJobRepo)
+	iNodeRepo := repo.NewNodeRepo(db)
+	iJobService := service.NewJobService(iJobRepo, iNodeRepo)
 	jobApi := api.NewJobApi(iJobService)
-	engine := router.NewWebRouter(v, jobApi)
+	iNodeService := service.NewNodeService(iNodeRepo)
+	nodeApi := api.NewNodeApi(iNodeService)
+	engine := router.NewWebRouter(v, jobApi, nodeApi)
 	return engine
 }
