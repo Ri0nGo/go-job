@@ -15,7 +15,11 @@ func NewJsonResp(c *gin.Context) *JsonResp {
 
 // Success 响应成功
 func (j *JsonResp) Success(data ...any) {
-	j.responseWithCode(CodeSuccess, data)
+	payload := (any)(nil)
+	if len(data) > 0 {
+		payload = data[0]
+	}
+	j.responseWithCode(CodeSuccess, payload)
 }
 
 // FailWithMsg 响应失败，指定消息

@@ -10,8 +10,9 @@ import (
 	"go-job/internal/upload"
 	"go-job/master/pkg/paths"
 	"go-job/master/repo"
+	"go-job/node/pkg/config"
 	"log/slog"
-	"time"
+	"os"
 )
 
 type IJobService interface {
@@ -43,49 +44,126 @@ func (j *JobService) AddJob(job model.Job) error {
 	if err := j.parseCrontab(job.CronExpr); err != nil {
 		return err
 	}
-	err := j.JobRepo.Inserts([]model.Job{job})
-	if err != nil {
-		return err
-	}
 
 	node, err := j.NodeRepo.QueryById(job.NodeID)
 	if err != nil {
 		return errors.New("node not found")
 	}
-	j.sendJobToNode(node, job)
+
+	// 先发送任务到节点中，若发送失败则直接返回
+	err = j.sendDataToNode(job, node)
+	if err != nil {
+		return err
+	}
+
+	// 将数据插入数据库
+	err = j.JobRepo.Inserts([]model.Job{job})
+	if err != nil {
+		// 若数据插入失败，则移除问题
+		// TODO 移除任务
+		err = j.removeJobInNode(job.Id)
+		if err != nil {
+			slog.Error("remove job failed in node", err, err.Error())
+		}
+		return err
+	}
+
 	return nil
 }
 
-func (j *JobService) sendJobToNode(node model.Node, job model.Job) {
-	go func() {
-		type reqJobNode struct {
-			Id       int            `json:"id"`
-			Name     string         `json:"name"`
-			ExecType model.ExecType `json:"exec_type"`
-			CronExpr string         `json:"cron_expr"`
-			Filename string         `json:"filename"`
-		}
-		req := reqJobNode{
-			Id:       job.Id,
-			Name:     job.Name,
-			ExecType: job.ExecType,
-			CronExpr: job.CronExpr,
-			Filename: job.Internal.FileMeta.UUIDFileName,
-		}
-		url := fmt.Sprintf("http://%s%s%s", node.Address,
-			paths.NodeJobAPI.BasePath, paths.NodeJobAPI.Create)
-		resp, err := httpClient.PostJson(context.Background(), url, req, 3*time.Second)
+func (j *JobService) sendDataToNode(job model.Job, node model.Node) error {
+	switch job.ExecType {
+	case model.ExecTypeFile:
+		// 发送文件到节点
+		err := j.sendJobFileInNode(job, node)
 		if err != nil {
-			slog.Error("send job to node error", "err", err)
+			return err
 		}
-		nodeResp, err := httpClient.ParseResponse(resp)
+		// 添加任务到节点
+		err = j.sendJobInNode(job, node)
 		if err != nil {
-			slog.Error("send job to node error", "err", err)
+			return err
 		}
-		if nodeResp.Code != 0 {
-			slog.Error("resp code isn't zero", "resp", resp)
-		}
-	}()
+	default:
+		return errors.New("not support exec type")
+
+	}
+	return nil
+}
+
+// sendJobFileToNode 发送job文件到节点
+func (j *JobService) sendJobFileInNode(job model.Job, node model.Node) error {
+	fileColName := "file"
+	filePath := fmt.Sprintf("%s/%s", config.App.Data.UploadJobDir,
+		job.Internal.FileMeta.UUIDFileName)
+	formData := map[string]string{
+		"filename": job.Internal.FileMeta.UUIDFileName,
+	}
+
+	f, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("http://%s%s%s", node.Address,
+		paths.NodeJobAPI.BasePath, paths.NodeJobAPI.Upload)
+	resp, err := httpClient.PostFormDataWithFile(context.Background(), fileColName,
+		f, url, formData, httpClient.DefaultTimeout)
+	if err != nil {
+		return err
+	}
+	nodeResp, err := httpClient.ParseResponse(resp)
+	if err != nil {
+		slog.Error("send job to node error", "err", err)
+		return err
+	}
+	if nodeResp.Code != 0 {
+		slog.Error("resp code isn't zero", "resp", resp)
+		return errors.New("resp code isn't zero in send job file")
+	}
+	return nil
+}
+
+// sendJobToNode 发送任务到节点
+func (j *JobService) sendJobInNode(job model.Job, node model.Node) error {
+	type reqJobNode struct {
+		Id       int            `json:"id"`
+		Name     string         `json:"name"`
+		ExecType model.ExecType `json:"exec_type"`
+		CronExpr string         `json:"cron_expr"`
+		Filename string         `json:"filename"`
+	}
+	req := reqJobNode{
+		Id:       job.Id,
+		Name:     job.Name,
+		ExecType: job.ExecType,
+		CronExpr: job.CronExpr,
+		Filename: job.Internal.FileMeta.UUIDFileName,
+	}
+	url := fmt.Sprintf("http://%s%s%s", node.Address,
+		paths.NodeJobAPI.BasePath, paths.NodeJobAPI.Create)
+
+	resp, err := httpClient.PostJson(context.Background(), url, req, httpClient.DefaultTimeout)
+	if err != nil {
+		slog.Error("send job to node error", "err", err)
+		return err
+	}
+	nodeResp, err := httpClient.ParseResponse(resp)
+	if err != nil {
+		slog.Error("send job to node error", "err", err)
+		return err
+	}
+	if nodeResp.Code != 0 {
+		slog.Error("resp code isn't zero", "resp", resp)
+		return errors.New("resp code isn't zero in send job data")
+	}
+	return nil
+}
+
+// removeJobInNode 移除任务
+func (j *JobService) removeJobInNode(id int) error {
+	return nil
+
 }
 
 // validExecType 创建任务的时候检测

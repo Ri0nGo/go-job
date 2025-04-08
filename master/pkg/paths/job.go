@@ -7,6 +7,7 @@ type JobAPI struct {
 	Create     string
 	Update     string
 	GetAll     string
+	Upload     string
 	GetOneById func(id int) string
 	DeleteById func(id int) string
 }
@@ -24,6 +25,7 @@ var NodeJobAPI = &JobAPI{
 	Create:   "/add",
 	Update:   "",
 	GetAll:   "",
+	Upload:   "/upload",
 	GetOneById: func(id int) string {
 		return fmt.Sprintf("%d", id)
 	},

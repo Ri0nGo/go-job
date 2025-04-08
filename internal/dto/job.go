@@ -1,12 +1,17 @@
 package dto
 
-import "go-job/internal/model"
+import (
+	"go-job/internal/model"
+)
 
 // ----------- node ----------- //
 
 type ReqJob struct {
-	model.Job
-	Filename string `json:"filename"`
+	Id       int            `json:"id"`
+	Name     string         `json:"name" binding:"required"`       // 任务名称
+	ExecType model.ExecType `json:"exec_type"  binding:"required"` // 任务类型
+	CronExpr string         `json:"cron_expr" binding:"required"`  // crontab 表达式
+	Filename string         `json:"filename"`
 }
 
 type ReqId struct {

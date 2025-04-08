@@ -3,7 +3,7 @@ APP_NODE_NAME := go-job-node
 UPLOAD_JOB_DIR := upload_job
 
 .PHONY: run-n
-run-node:
+run-n:
 	@echo "running node $(APP_NODE_NAME)..."
 	go run cmd/node/node.go
 

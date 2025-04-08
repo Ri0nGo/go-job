@@ -31,13 +31,15 @@ func (h *JobHandler) RegisterRoutes(server *gin.RouterGroup) {
 	jh.DELETE("/:id", h.DeleteJob)
 	jh.PUT("", h.UpdateJob)
 	jh.GET("", h.GetJob)
-	//jh.GET("", h.GetJobList)
+	jh.POST("/upload", h.UploadFile)
+	//jh.GET("", h.GetJobList)  todo 待实现
 }
 
 // AddJob 添加任务
 func (h *JobHandler) AddJob(ctx *gin.Context) {
 	var req dto.ReqJob
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		slog.Error("add job bind json err:", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
@@ -112,7 +114,7 @@ func (h *JobHandler) UploadFile(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
-	uuid, ok := ctx.GetPostForm("uuid")
+	uuidFilename, ok := ctx.GetPostForm("filename")
 	if !ok {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
@@ -121,7 +123,7 @@ func (h *JobHandler) UploadFile(ctx *gin.Context) {
 	// 校验文件信息
 	fileMeta := upload.FileMeta{
 		Filename:     file.Filename,
-		UUIDFileName: uuid,
+		UUIDFileName: uuidFilename,
 		Size:         int(file.Size),
 		UploadTime:   time.Now(),
 	}
@@ -136,7 +138,7 @@ func (h *JobHandler) UploadFile(ctx *gin.Context) {
 	}
 
 	ext := filepath.Ext(file.Filename)
-	savePath := fmt.Sprintf("%s/%s.%s", config.App.Data.UploadJobDir, uuid, ext)
+	savePath := fmt.Sprintf("%s/%s%s", config.App.Data.UploadJobDir, uuidFilename, ext)
 	if err := ctx.SaveUploadedFile(file, savePath); err != nil {
 		slog.Error("save file error", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.UploadFileError)

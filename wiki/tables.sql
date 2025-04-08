@@ -3,7 +3,7 @@ CREATE TABLE `job` (
     `id` int NOT NULL AUTO_INCREMENT,
     `name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '任务名称',
     `exec_type` smallint NOT NULL COMMENT '执行类型 1: shell; 2: http; 3:file',
-    `con_expr` varchar(128) DEFAULT NULL COMMENT 'cron 表达式',
+    `cron_expr` varchar(128) DEFAULT NULL COMMENT 'cron 表达式',
     `node_id` int NOT NULL COMMENT '节点id',
     `internal` json DEFAULT NULL,
     `created_time` datetime DEFAULT NULL,
