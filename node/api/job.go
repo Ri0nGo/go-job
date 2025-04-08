@@ -123,7 +123,7 @@ func (h *JobHandler) UploadFile(ctx *gin.Context) {
 		Filename:     file.Filename,
 		UUIDFileName: uuid,
 		Size:         int(file.Size),
-		Uploaded:     time.Now(),
+		UploadTime:   time.Now(),
 	}
 	if err := upload.ValidatorFileOpts(fileMeta,
 		upload.FileExtValidator, upload.FileSizeValidator); err != nil {

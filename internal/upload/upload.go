@@ -15,10 +15,10 @@ var (
 
 // FileMeta 文件信息
 type FileMeta struct {
-	Filename     string // 原始文件名
-	UUIDFileName string // 修改后的文件名
-	Size         int
-	Uploaded     time.Time
+	Filename     string    `json:"filename"`       // 原始文件名
+	UUIDFileName string    `json:"uuid_file_name"` // 修改后的文件名
+	Size         int       `json:"size"`
+	UploadTime   time.Time `json:"upload_time"`
 }
 
 // ValidatorOptions 文件信息校验器
@@ -55,6 +55,12 @@ func GetFileMeta(uuid string) (FileMeta, bool) {
 	defer defaultFu.mux.RUnlock()
 	file, ok := defaultFu.files[uuid]
 	return file, ok
+}
+
+func DeleteFileMeta(uuid string) {
+	defaultFu.mux.Lock()
+	defer defaultFu.mux.Unlock()
+	delete(defaultFu.files, uuid)
 }
 
 func ExtsOpt(exts []string) Option {

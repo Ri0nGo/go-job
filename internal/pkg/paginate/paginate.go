@@ -22,6 +22,7 @@ func PaginateList[T any](db *gorm.DB, pageNum, pageSize int) (model.Page, error)
 	}
 
 	var (
+		m      T
 		result model.Page
 		list   []T
 		total  int64
@@ -30,10 +31,10 @@ func PaginateList[T any](db *gorm.DB, pageNum, pageSize int) (model.Page, error)
 	offset := (pageNum - 1) * pageSize
 
 	// Count total
-	if err := db.Count(&total).Error; err != nil {
+	if err := db.Model(&m).Count(&total).Error; err != nil {
 		return result, err
 	}
-	if err := db.Limit(pageSize).Offset(offset).Find(&list).Error; err != nil {
+	if err := db.Model(&m).Limit(pageSize).Offset(offset).Find(&list).Error; err != nil {
 		return result, err
 	}
 	result = model.Page{

@@ -56,6 +56,11 @@ var msgMap = map[int]string{
 	NotFound:          "not found",
 	ServerError:       "server error",
 	UnauthorizedError: "unauthorized",
+
+	// ============= request ============= //
+	ParamsError: "params error",
+
+	// ============= file ============= //
 	UploadFileError:   "upload file error",
 	FileNotExist:      "file not exist",
 	FileExtNotSupport: "file ext not support",

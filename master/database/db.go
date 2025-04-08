@@ -22,7 +22,7 @@ func NewMySQLWithGORM() *gorm.DB {
 	)
 	gromCfg := &gorm.Config{}
 	if config.App.MySQL.ShowSQL {
-		log := logger.New(
+		gormLog := logger.New(
 			log.New(os.Stdout, "\r\n[GORM] ", log.LstdFlags), // io writer
 			logger.Config{
 				SlowThreshold:             200 * time.Millisecond, // 慢 SQL 阈值
@@ -31,7 +31,7 @@ func NewMySQLWithGORM() *gorm.DB {
 				Colorful:                  true,                   // 彩色打印
 			},
 		)
-		gromCfg.Logger = log
+		gromCfg.Logger = gormLog
 	}
 	db, err := gorm.Open(mysql.Open(dsn), gromCfg)
 	if err != nil {

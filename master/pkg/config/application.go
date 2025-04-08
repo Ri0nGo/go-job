@@ -19,12 +19,12 @@ type Data struct {
 }
 
 type MySQL struct {
-	Username    string `yaml:"username"`
-	Password    string `yaml:"password"`
-	Database    string `yaml:"database"`
-	Host        string `yaml:"host"`
-	Port        int    `yaml:"port"`
-	MaxIdleConn int    `yaml:"max_idle_conn"`
-	MaxOpenConn int    `yaml:"max_open_conn"`
-	ShowSQL     bool   `yaml:"show_sql"`
+	Username    string `mapstructure:"username"`
+	Password    string `mapstructure:"password"`
+	Database    string `mapstructure:"database"`
+	Host        string `mapstructure:"host"`
+	Port        int    `mapstructure:"port"`
+	MaxIdleConn int    `mapstructure:"max_idle_conn"`
+	MaxOpenConn int    `mapstructure:"max_open_conn"`
+	ShowSQL     bool   `mapstructure:"show_sql"`
 }

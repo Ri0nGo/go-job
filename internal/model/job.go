@@ -38,7 +38,12 @@ type Job struct {
 	CreatedAt time.Time `json:"created_at" gorm:"column:created_time;autoCreateTime"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"column:updated_time;autoUpdateTime"`
 	Internal  Internal  `gorm:"serializer:json;column:internal"`
-	FileKey   string    `json:"file_key" gorm:"-"`
+	FileName  string    `json:"filename" gorm:"-"` // 文件名
+	FileKey   string    `json:"file_key" gorm:"-"` // 文件key
+}
+
+func (Job) TableName() string {
+	return "job"
 }
 
 type Internal struct {

@@ -29,7 +29,7 @@ func (j *JobService) GetJobList(page model.Page) (model.Page, error) {
 }
 
 func (j *JobService) AddJob(job model.Job) error {
-	if err := j.validExecType(job); err != nil {
+	if err := j.parseExecType(&job); err != nil {
 		return err
 	}
 
@@ -39,7 +39,8 @@ func (j *JobService) AddJob(job model.Job) error {
 	return j.JobRepo.Inserts([]model.Job{job})
 }
 
-func (j *JobService) validExecType(job model.Job) error {
+// validExecType 创建任务的时候检测
+func (j *JobService) parseExecType(job *model.Job) error {
 	switch job.ExecType {
 	case model.ExecTypeFile:
 		fileMeta, ok := upload.GetFileMeta(job.FileKey)
@@ -47,6 +48,7 @@ func (j *JobService) validExecType(job model.Job) error {
 			return errors.New("file not exist")
 		}
 		job.Internal.FileMeta = fileMeta
+		upload.DeleteFileMeta(job.FileKey)
 	default:
 		return errors.New("not support exec type")
 	}
@@ -54,7 +56,8 @@ func (j *JobService) validExecType(job model.Job) error {
 }
 
 func (j *JobService) parseCrontab(cronExpr string) error {
-	_, err := cron.ParseStandard(cronExpr)
+	parser := cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+	_, err := parser.Parse(cronExpr)
 	return err
 }
 
@@ -63,14 +66,30 @@ func (j *JobService) DeleteJob(id int) error {
 }
 
 func (j *JobService) UpdateJob(job model.Job) error {
-	if err := j.validExecType(job); err != nil {
-		return err
-	}
 	if err := j.parseCrontab(job.CronExpr); err != nil {
 		return err
 	}
-	if _, err := j.GetJob(job.Id); err != nil {
+	dbJob, err := j.GetJob(job.Id)
+	if err != nil {
 		return err
+	}
+	switch job.ExecType {
+	case model.ExecTypeFile:
+		if len(job.FileName) == 0 && len(job.FileKey) == 0 {
+			return errors.New("file name or file key is empty")
+		}
+		// 执行文件修改了
+		if len(job.FileKey) > 0 {
+			fileMeta, b := upload.GetFileMeta(job.FileKey)
+			if !b {
+				return errors.New("file not exist")
+			}
+			job.Internal = dbJob.Internal
+			job.Internal.FileMeta = fileMeta
+			upload.DeleteFileMeta(job.FileKey)
+		}
+	default:
+		return errors.New("not support exec type")
 	}
 	return j.JobRepo.Update(job)
 }
