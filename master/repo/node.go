@@ -32,7 +32,7 @@ func (j *NodeRepo) Inserts(jobs []model.Node) error {
 }
 
 func (j *NodeRepo) Update(job model.Node) error {
-	return j.mysqlDB.Where("id = ?", job.Id).Updates(&job).Error
+	return j.mysqlDB.Updates(&job).Error
 }
 
 func (j *NodeRepo) Delete(id int) error {
