@@ -25,8 +25,11 @@ func InitWebServer() *gin.Engine {
 	iNodeRepo := repo.NewNodeRepo(db)
 	iJobService := service.NewJobService(iJobRepo, iNodeRepo)
 	jobApi := api.NewJobApi(iJobService)
+	iJobRecordRepo := repo.NewJobRecordRepo(db)
+	iJobRecordService := service.NewJobRecordService(iJobRecordRepo)
+	jobRecordApi := api.NewJobRecordApi(iJobRecordService)
 	iNodeService := service.NewNodeService(iNodeRepo)
 	nodeApi := api.NewNodeApi(iNodeService)
-	engine := router.NewWebRouter(v, jobApi, nodeApi)
+	engine := router.NewWebRouter(v, jobApi, jobRecordApi, nodeApi)
 	return engine
 }

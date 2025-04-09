@@ -48,7 +48,7 @@ func (s *JobService) AddJob(ctx context.Context, req dto.ReqJob) error {
 		return err
 	}
 	// 设置状态回调事件
-	exec.SetOnStatusChange(jj.OnStatusChange)
+	exec.OnResultChange(jj.OnResultChange)
 	jj.Start()
 
 	job.AddJob(jj)

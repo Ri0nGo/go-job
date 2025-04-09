@@ -19,3 +19,10 @@ func EnsureDir(path string) error {
 	}
 	return nil
 }
+
+func ErrorToString(err error) string {
+	if err != nil {
+		return err.Error()
+	}
+	return ""
+}

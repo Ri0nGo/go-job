@@ -7,11 +7,13 @@ import (
 
 func NewWebRouter(mdls []gin.HandlerFunc,
 	jobApi *api.JobApi,
+	jobRecordApi *api.JobRecordApi,
 	nodeApi *api.NodeApi) *gin.Engine {
 	server := gin.Default()
 	server.Use(mdls...)
 	group := server.Group("/api/go-job")
 	jobApi.RegisterRoutes(group)
+	jobRecordApi.RegisterRoutes(group)
 	nodeApi.RegisterRoutes(group)
 	return server
 }

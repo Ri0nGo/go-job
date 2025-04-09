@@ -2,36 +2,73 @@ package executor
 
 import (
 	"errors"
-	"fmt"
 	"go-job/internal/model"
+	"go-job/internal/pkg/utils"
 	"go-job/node/pkg/config"
 	"os/exec"
 	"path/filepath"
+	"time"
 )
+
+var defaultOutputLen = 1024
 
 type FileExecutor struct {
 	id             int
 	name           string
 	ext            string
 	fileName       string
-	OnStatusChange func(status model.JobStatus) // 注册回调事件， 后续可以优化为channel的方式接收结果
+	runningStatus  model.JobStatus
+	startExecTime  time.Time
+	endExecTime    time.Time
+	onResultChange func(result model.JobExecResult) // 注册回调事件， 后续可以优化为channel的方式接收结果
 }
 
 func (f *FileExecutor) Run() {
-	f.OnStatusChange(model.Running)
-	if err := f.Execute(); err != nil {
-		f.OnStatusChange(model.Failed)
-		return
+	f.BeforeExecute()
+	output, err := f.Execute()
+	f.AfterExecute(err)
+	if f.onResultChange != nil {
+		f.onResultChange(f.buildJobExecResult(output, err))
 	}
-	f.OnStatusChange(model.Success)
 
 }
 
-func (f *FileExecutor) Execute() error {
+func (f *FileExecutor) BeforeExecute() {
+	f.startExecTime = time.Now()
+	f.runningStatus = model.Running
+}
+
+func (f *FileExecutor) AfterExecute(err error) {
+	if err != nil {
+		f.runningStatus = model.Failed
+	} else {
+		f.runningStatus = model.Success
+	}
+	f.endExecTime = time.Now()
+}
+
+func (f *FileExecutor) buildJobExecResult(output string, err error) model.JobExecResult {
+	runes := []rune(output)
+	if len(output) > defaultOutputLen {
+		output = string(runes[:defaultOutputLen-3]) + "..."
+	}
+	result := model.JobExecResult{
+		StartTime: f.startExecTime.Unix(),
+		EndTime:   f.endExecTime.Unix(),
+		Duration:  f.endExecTime.Sub(f.startExecTime).Seconds(),
+		Status:    f.runningStatus,
+		Output:    output,
+		Error:     utils.ErrorToString(err),
+	}
+	return result
+}
+
+func (f *FileExecutor) Execute() (string, error) {
 	var (
 		output []byte
 		err    error
 	)
+
 	switch f.ext {
 	case ".py":
 		output, err = f.execFile()
@@ -40,13 +77,14 @@ func (f *FileExecutor) Execute() error {
 		err = errors.New("不支持的文件类型")
 	}
 
-	// todo 回传结果和执行状态
-	fmt.Printf("id: %d, name: %s, exec result: %s, err: %v\n",
-		f.id, f.name, string(output), err)
+	//fmt.Printf("id: %d, name: %s, exec result: %s, err: %v\n",
+	//	f.id, f.name, string(output), err)
 
-	// todo 待实现
-	go f.sendResultToMaster()
-	return err
+	return string(output), err
+}
+
+func (f *FileExecutor) OnResultChange(fn func(result model.JobExecResult)) {
+	f.onResultChange = fn
 }
 
 func NewFileExecutor(id int, name, fileName string) *FileExecutor {
@@ -58,19 +96,10 @@ func NewFileExecutor(id int, name, fileName string) *FileExecutor {
 	}
 }
 
-func (f *FileExecutor) SetOnStatusChange(fn func(status model.JobStatus)) {
-	f.OnStatusChange = fn
-}
-
 func (f *FileExecutor) execFile() (output []byte, err error) {
 	// 执行文件，这是一次性捕获所有输出，无法实现实时捕获，
-	execFilePath := fmt.Sprintf("%s/%s", config.App.Data.UploadJobDir, f.fileName)
+	execFilePath := filepath.Join(config.App.Data.UploadJobDir, f.fileName)
 	// TODO 后续需要修改为实时捕获
-	cmd := exec.Command("python3", execFilePath)
+	cmd := exec.Command("python", execFilePath)
 	return cmd.CombinedOutput()
-}
-
-// sendResultToMaster 回传结果到master
-func (f *FileExecutor) sendResultToMaster() {
-
 }

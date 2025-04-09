@@ -1,6 +1,7 @@
 APP_MASTER_NAME := go-job-master
 APP_NODE_NAME := go-job-node
 UPLOAD_JOB_DIR := upload_job
+NODE_UPLOAD_JOB_DIR := node_upload_job
 
 .PHONY: run-n
 run-n:
@@ -28,11 +29,13 @@ ifeq ($(OS),Windows_NT)
 clean:
 	@echo "clean windows dir: $(UPLOAD_JOB_DIR)"
 	@if exist data\$(UPLOAD_JOB_DIR) (rmdir /s /q data\$(UPLOAD_JOB_DIR))
+	@if exist data\$(NODE_UPLOAD_JOB_DIR) (rmdir /s /q data\$(NODE_UPLOAD_JOB_DIR))
 
 else
 
 clean:
 	@echo "clean linux dir: $(UPLOAD_JOB_DIR)"
 	@rm -rf data/$(UPLOAD_JOB_DIR)
+	@rm -rf data/$(NODE_UPLOAD_JOB_DIR)
 
 endif

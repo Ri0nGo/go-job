@@ -21,14 +21,17 @@ func InitWebServer() *gin.Engine {
 
 		// repo
 		repo.NewJobRepo,
+		repo.NewJobRecordRepo,
 		repo.NewNodeRepo,
 
 		// service
 		service.NewJobService,
+		service.NewJobRecordService,
 		service.NewNodeService,
 
 		// api
 		api.NewJobApi,
+		api.NewJobRecordApi,
 		api.NewNodeApi,
 
 		// web

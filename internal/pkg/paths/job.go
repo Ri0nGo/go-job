@@ -33,3 +33,5 @@ var NodeJobAPI = &JobAPI{
 		return fmt.Sprintf("/%d", id)
 	},
 }
+
+var JobRecordCreateAPI = "/api/go-job/job_records/add"

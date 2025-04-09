@@ -11,6 +11,20 @@ CREATE TABLE `job` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- 任务记录表
+CREATE TABLE `job_record` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `job_id` int NOT NULL,
+    `status` smallint DEFAULT NULL COMMENT '执行状态 0等待中；1运行中；2成功；3失败',
+    `start_time` datetime DEFAULT NULL COMMENT '开始执行时间',
+    `end_time` datetime DEFAULT NULL COMMENT '结束执行时间',
+    `duration` float DEFAULT NULL COMMENT '运行耗时',
+    `output` text COMMENT '执行文件内容输出',
+    `error` text COMMENT '节点执行异常日志',
+    `next_exec_time` datetime DEFAULT NULL COMMENT '任务下一次执行时间',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 -- 标签表
 CREATE TABLE `tag` (
     `id` int NOT NULL AUTO_INCREMENT,

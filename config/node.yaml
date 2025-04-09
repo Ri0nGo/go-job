@@ -3,5 +3,8 @@ server:
   ip: "0.0.0.0"
   port: 8081
 
+master:
+  address: 127.0.0.1:8080
+  
 data:
   upload_job_dir: "./data/node_upload_job"

@@ -16,6 +16,7 @@ const (
 	jobModule
 	nodeModule
 	tagModule
+	jobRecordModule
 )
 
 const (
@@ -50,6 +51,13 @@ var (
 	JobUpdateFailed = genCodeMsg(jobModule, 2, "任务更新失败")
 	JobGetFailed    = genCodeMsg(jobModule, 3, "任务查询失败")
 	JobDeleteFailed = genCodeMsg(jobModule, 4, "任务删除失败")
+)
+
+var (
+	JobRecordNotExist     = genCodeMsg(jobRecordModule, 0, "任务记录不存在")
+	JobRecordAddFailed    = genCodeMsg(jobRecordModule, 1, "任务记录添加失败")
+	JobRecordGetFailed    = genCodeMsg(jobRecordModule, 1, "任务记录查询失败")
+	JobRecordDeleteFailed = genCodeMsg(jobRecordModule, 2, "任务记录删除失败")
 )
 
 var (

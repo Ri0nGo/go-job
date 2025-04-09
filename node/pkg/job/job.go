@@ -7,6 +7,7 @@ import (
 	"go-job/internal/model"
 	"go-job/node/pkg/executor"
 	"sync"
+	"time"
 )
 
 type JobMeta struct {
@@ -25,9 +26,11 @@ type Job struct {
 	Cron          *cron.Cron
 	CronEntryID   cron.EntryID
 	RunningStatus model.JobStatus
+	NextExecTime  time.Time
 }
 
-// JobManager 全局job管理
+// ============= JobManager 全局job管理 ============= //
+
 type JobManager struct {
 	mux  sync.RWMutex
 	jobs map[int]*Job
@@ -66,6 +69,8 @@ func GetAllJobs() []*Job {
 	return jobs
 }
 
+// ============= job 对象 ============= //
+
 func NewJob(ctx context.Context, cancel context.CancelFunc, req dto.ReqJob, iExecutor executor.IExecutor) *Job {
 	return &Job{
 		Ctx:    ctx,
@@ -77,11 +82,11 @@ func NewJob(ctx context.Context, cancel context.CancelFunc, req dto.ReqJob, iExe
 			CronExpr: req.CronExpr,
 			FileName: req.Filename,
 		},
-		Executor:      iExecutor,
-		RunningStatus: model.Pending,
+		Executor: iExecutor,
 	}
 }
 
+// BuildCrontab 构建一个Cron对象
 func (j *Job) BuildCrontab() error {
 	c := cron.New(cron.WithSeconds())
 	entryID, err := c.AddJob(j.JobMeta.CronExpr, j.Executor)
@@ -90,17 +95,32 @@ func (j *Job) BuildCrontab() error {
 	}
 	j.Cron = c
 	j.CronEntryID = entryID
+	j.RunningStatus = model.Pending
+	j.NextExecTime = j.getNextExecTime()
 	return nil
 }
 
-func (j *Job) OnStatusChange(status model.JobStatus) {
-	j.RunningStatus = status
+// OnResultChange 接收执行器的回调
+func (j *Job) OnResultChange(result model.JobExecResult) {
+	callbackResult := model.CallbackJobResult{
+		JobExecResult: result,
+		JobID:         j.JobMeta.Id,
+		NextExecTime:  j.getNextExecTime().Unix(),
+	}
+	go CallbackJobResult(callbackResult)
 }
 
+// getNextExecTime 获取job下一次执行时间
+func (j *Job) getNextExecTime() time.Time {
+	return j.Cron.Entry(j.CronEntryID).Next
+}
+
+// Start job开始执行
 func (j *Job) Start() {
 	j.Cron.Start()
 }
 
+// Stop job停止运行
 func (j *Job) Stop() context.Context {
 	return j.Cron.Stop()
 }
