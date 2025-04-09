@@ -24,6 +24,23 @@ func PostJson(ctx context.Context, url string, body any, timeout time.Duration) 
 		Post(url)
 }
 
+func PutJson(ctx context.Context, url string, body any, timeout time.Duration) (*resty.Response, error) {
+	return defaultRestyClient.SetTimeout(timeout).R().
+		SetContext(ctx).
+		SetHeader("Content-Type", "application/json").
+		SetBody(body).
+		Put(url)
+}
+
+func Delete(ctx context.Context, url string, timeout time.Duration, params map[string]string) (*resty.Response, error) {
+	c := defaultRestyClient.SetTimeout(timeout).R().
+		SetContext(ctx)
+	if params != nil {
+		c.SetQueryParams(params)
+	}
+	return c.Delete(url)
+}
+
 func PostJsonWithAuth(ctx context.Context, url string, body any,
 	timeout time.Duration, auth string) (*resty.Response, error) {
 	return defaultRestyClient.SetTimeout(timeout).R().

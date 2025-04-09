@@ -7,6 +7,7 @@ import (
 	"go-job/internal/model"
 	"go-job/node/pkg/executor"
 	"go-job/node/pkg/job"
+	"log/slog"
 )
 
 var (
@@ -28,6 +29,12 @@ func NewJobService() *JobService {
 }
 
 func (s *JobService) AddJob(ctx context.Context, req dto.ReqJob) error {
+	// job 已经存在，不能重复添加
+	if _, ok := job.GetJob(req.Id); ok {
+		slog.Error("job already exists, don't add job", "job id", req.Id,
+			"job name", req.Name)
+		return nil
+	}
 	// 获取对于的执行器
 	exec, err := s.newExecutor(ctx, req)
 	if err != nil {
@@ -87,7 +94,7 @@ func (s *JobService) newExecutor(ctx context.Context, req dto.ReqJob) (executor.
 
 	switch req.ExecType {
 	case model.ExecTypeFile:
-		exec = executor.NewFileExecutor(req.Filename)
+		exec = executor.NewFileExecutor(req.Id, req.Name, req.Filename)
 	default:
 		return nil, errors.New("invalid exec type")
 	}

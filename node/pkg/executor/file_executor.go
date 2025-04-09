@@ -10,6 +10,8 @@ import (
 )
 
 type FileExecutor struct {
+	id             int
+	name           string
 	ext            string
 	fileName       string
 	OnStatusChange func(status model.JobStatus) // 注册回调事件， 后续可以优化为channel的方式接收结果
@@ -39,15 +41,18 @@ func (f *FileExecutor) Execute() error {
 	}
 
 	// todo 回传结果和执行状态
-	fmt.Println("exec result: ", string(output), err)
+	fmt.Printf("id: %d, name: %s, exec result: %s, err: %v\n",
+		f.id, f.name, string(output), err)
 
 	// todo 待实现
 	go f.sendResultToMaster()
 	return err
 }
 
-func NewFileExecutor(fileName string) *FileExecutor {
+func NewFileExecutor(id int, name, fileName string) *FileExecutor {
 	return &FileExecutor{
+		id:       id,
+		name:     name,
 		ext:      filepath.Ext(fileName),
 		fileName: fileName,
 	}

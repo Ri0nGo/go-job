@@ -9,7 +9,6 @@ import (
 	"go-job/node/pkg/config"
 	"go-job/node/service"
 	"log/slog"
-	"path/filepath"
 	"strconv"
 	"time"
 )
@@ -71,9 +70,9 @@ func (h *JobHandler) UpdateJob(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
-
 	err := h.JobService.UpdateJob(ctx.Request.Context(), req)
 	if err != nil {
+		slog.Error("update job err:", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.JobUpdateFailed)
 		return
 	}
@@ -137,8 +136,7 @@ func (h *JobHandler) UploadFile(ctx *gin.Context) {
 		return
 	}
 
-	ext := filepath.Ext(file.Filename)
-	savePath := fmt.Sprintf("%s/%s%s", config.App.Data.UploadJobDir, uuidFilename, ext)
+	savePath := fmt.Sprintf("%s/%s", config.App.Data.UploadJobDir, uuidFilename)
 	if err := ctx.SaveUploadedFile(file, savePath); err != nil {
 		slog.Error("save file error", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.UploadFileError)

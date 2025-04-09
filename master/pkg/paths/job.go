@@ -27,9 +27,9 @@ var NodeJobAPI = &JobAPI{
 	GetAll:   "",
 	Upload:   "/upload",
 	GetOneById: func(id int) string {
-		return fmt.Sprintf("%d", id)
+		return fmt.Sprintf("/%d", id)
 	},
 	DeleteById: func(id int) string {
-		return fmt.Sprintf("%d", id)
+		return fmt.Sprintf("/%d", id)
 	},
 }

@@ -2,13 +2,11 @@ package job
 
 import (
 	"context"
-	"fmt"
 	"github.com/robfig/cron/v3"
 	"go-job/internal/dto"
 	"go-job/internal/model"
 	"go-job/node/pkg/executor"
 	"sync"
-	"time"
 )
 
 type JobMeta struct {
@@ -97,7 +95,6 @@ func (j *Job) BuildCrontab() error {
 
 func (j *Job) OnStatusChange(status model.JobStatus) {
 	j.RunningStatus = status
-	fmt.Println(time.Now().Format(time.DateTime), "\tjob status:", status.String())
 }
 
 func (j *Job) Start() {

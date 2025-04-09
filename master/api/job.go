@@ -112,6 +112,7 @@ func (a *JobApi) UpdateJob(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
+
 	if err := a.JobService.UpdateJob(req); err != nil {
 		slog.Error("update job err:", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.JobUpdateFailed)
@@ -124,6 +125,7 @@ func (a *JobApi) UpdateJob(ctx *gin.Context) {
 func (a *JobApi) UploadFile(ctx *gin.Context) {
 	file, err := ctx.FormFile("file")
 	if err != nil {
+		slog.Error("job upload file err:", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}

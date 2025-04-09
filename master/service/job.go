@@ -8,11 +8,19 @@ import (
 	"go-job/internal/model"
 	"go-job/internal/pkg/httpClient"
 	"go-job/internal/upload"
+	"go-job/master/pkg/config"
 	"go-job/master/pkg/paths"
 	"go-job/master/repo"
-	"go-job/node/pkg/config"
 	"log/slog"
 	"os"
+	"resty.dev/v3"
+)
+
+type jobOperation string
+
+const (
+	sendJobByUpdate jobOperation = "sendJobByUpdate"
+	sendJobByCreate jobOperation = "sendJobByCreate"
 )
 
 type IJobService interface {
@@ -50,21 +58,16 @@ func (j *JobService) AddJob(job model.Job) error {
 		return errors.New("node not found")
 	}
 
-	// 先发送任务到节点中，若发送失败则直接返回
-	err = j.sendDataToNode(job, node)
+	// 将数据插入数据库
+	err = j.JobRepo.Insert(&job)
 	if err != nil {
 		return err
 	}
 
-	// 将数据插入数据库
-	err = j.JobRepo.Inserts([]model.Job{job})
+	// 发送任务到节点中，若该任务发送失败，则将任务同步状态标记为异常
+	// 后面需要有个后台协程定期检测重新发送
+	err = j.sendDataToNode(job, node)
 	if err != nil {
-		// 若数据插入失败，则移除问题
-		// TODO 移除任务
-		err = j.removeJobInNode(job.Id)
-		if err != nil {
-			slog.Error("remove job failed in node", err, err.Error())
-		}
 		return err
 	}
 
@@ -80,7 +83,7 @@ func (j *JobService) sendDataToNode(job model.Job, node model.Node) error {
 			return err
 		}
 		// 添加任务到节点
-		err = j.sendJobInNode(job, node)
+		err = j.sendJobInNode(job, node, sendJobByCreate)
 		if err != nil {
 			return err
 		}
@@ -114,7 +117,7 @@ func (j *JobService) sendJobFileInNode(job model.Job, node model.Node) error {
 	}
 	nodeResp, err := httpClient.ParseResponse(resp)
 	if err != nil {
-		slog.Error("send job to node error", "err", err)
+		slog.Error("send job file to node error", "err", err)
 		return err
 	}
 	if nodeResp.Code != 0 {
@@ -125,7 +128,7 @@ func (j *JobService) sendJobFileInNode(job model.Job, node model.Node) error {
 }
 
 // sendJobToNode 发送任务到节点
-func (j *JobService) sendJobInNode(job model.Job, node model.Node) error {
+func (j *JobService) sendJobInNode(job model.Job, node model.Node, operation jobOperation) error {
 	type reqJobNode struct {
 		Id       int            `json:"id"`
 		Name     string         `json:"name"`
@@ -140,17 +143,36 @@ func (j *JobService) sendJobInNode(job model.Job, node model.Node) error {
 		CronExpr: job.CronExpr,
 		Filename: job.Internal.FileMeta.UUIDFileName,
 	}
-	url := fmt.Sprintf("http://%s%s%s", node.Address,
-		paths.NodeJobAPI.BasePath, paths.NodeJobAPI.Create)
 
-	resp, err := httpClient.PostJson(context.Background(), url, req, httpClient.DefaultTimeout)
-	if err != nil {
-		slog.Error("send job to node error", "err", err)
-		return err
+	// TODO 感觉这块代码还可以优化处理
+	var (
+		resp *resty.Response
+		err  error
+	)
+	url := fmt.Sprintf("http://%s%s", node.Address,
+		paths.NodeJobAPI.BasePath)
+	switch operation {
+	case sendJobByCreate:
+		url = url + paths.NodeJobAPI.Create
+		resp, err = httpClient.PostJson(context.Background(), url, req, httpClient.DefaultTimeout)
+		if err != nil {
+			slog.Error("send job to node error by create", "url", url,
+				"req", req, "err", err)
+			return err
+		}
+	case sendJobByUpdate:
+		url = url + paths.NodeJobAPI.Update
+		resp, err = httpClient.PutJson(context.Background(), url, req, httpClient.DefaultTimeout)
+		if err != nil {
+			slog.Error("send job to node error by update", "url", url,
+				"req", req, "err", err)
+			return err
+		}
 	}
+
 	nodeResp, err := httpClient.ParseResponse(resp)
 	if err != nil {
-		slog.Error("send job to node error", "err", err)
+		slog.Error("send job to node error", "resp", resp, "err", err)
 		return err
 	}
 	if nodeResp.Code != 0 {
@@ -161,7 +183,24 @@ func (j *JobService) sendJobInNode(job model.Job, node model.Node) error {
 }
 
 // removeJobInNode 移除任务
-func (j *JobService) removeJobInNode(id int) error {
+func (j *JobService) removeJobInNode(node model.Node, id int) error {
+	url := fmt.Sprintf("http://%s%s%s", node.Address,
+		paths.NodeJobAPI.BasePath, paths.NodeJobAPI.DeleteById(id)) // Note 感觉这种写法还是不太好，后面需要调整
+	resp, err := httpClient.Delete(context.Background(), url, httpClient.DefaultTimeout, nil)
+	if err != nil {
+		slog.Error("remove job from node error by delete", "url", url,
+			"resp", resp, "err", err)
+		return err
+	}
+	nodeResp, err := httpClient.ParseResponse(resp)
+	if err != nil {
+		slog.Error("remove job parse error", "resp", resp, "err", err)
+		return err
+	}
+	if nodeResp.Code != 0 {
+		slog.Error("remove job resp code isn't zero", "resp", resp)
+		return errors.New("resp code isn't zero in send job data")
+	}
 	return nil
 
 }
@@ -189,6 +228,17 @@ func (j *JobService) parseCrontab(cronExpr string) error {
 }
 
 func (j *JobService) DeleteJob(id int) error {
+	job, err := j.JobRepo.QueryById(id)
+	if err != nil {
+		return err
+	}
+	node, err := j.NodeRepo.QueryById(job.NodeID)
+	if err != nil {
+		return err
+	}
+	if err = j.removeJobInNode(node, id); err != nil {
+		return err
+	}
 	return j.JobRepo.Delete(id)
 }
 
@@ -200,6 +250,11 @@ func (j *JobService) UpdateJob(job model.Job) error {
 	if err != nil {
 		return err
 	}
+	node, err := j.NodeRepo.QueryById(job.NodeID)
+	if err != nil {
+		return errors.New("node not found")
+	}
+
 	switch job.ExecType {
 	case model.ExecTypeFile:
 		if len(job.FileName) == 0 && len(job.FileKey) == 0 {
@@ -214,11 +269,27 @@ func (j *JobService) UpdateJob(job model.Job) error {
 			job.Internal = dbJob.Internal
 			job.Internal.FileMeta = fileMeta
 			upload.DeleteFileMeta(job.FileKey)
+			err = j.sendJobFileInNode(job, node)
+			if err != nil {
+				return err
+			}
+		} else {
+			// 没有更新文件，则需要将数据库中的文件信息获取到，发送给node
+			job.Internal.FileMeta = dbJob.Internal.FileMeta
 		}
 	default:
 		return errors.New("not support exec type")
 	}
-	return j.JobRepo.Update(job)
+
+	err = j.JobRepo.Update(&job)
+	if err != nil {
+		return err
+	}
+	err = j.sendJobInNode(job, node, sendJobByUpdate)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewJobService(jobRepo repo.IJobRepo, nodeRepo repo.INodeRepo) IJobService {
