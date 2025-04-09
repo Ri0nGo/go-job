@@ -37,7 +37,6 @@ func (a *JobApi) RegisterRoutes(group *gin.RouterGroup) {
 		jobGroup.PUT("/update", a.UpdateJob)
 		jobGroup.DELETE("/:id", a.DeleteJob)
 		jobGroup.POST("/upload", a.UploadFile)
-		jobGroup.POST("/callback", a.UploadFile)
 	}
 }
 
