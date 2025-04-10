@@ -15,7 +15,7 @@ CREATE TABLE `job` (
 CREATE TABLE `job_record` (
     `id` int NOT NULL AUTO_INCREMENT,
     `job_id` int NOT NULL,
-    `status` smallint DEFAULT NULL COMMENT '执行状态 0等待中；1运行中；2成功；3失败',
+    `status` smallint COMMENT '执行状态 0待执行；1运行中；2成功；3失败',
     `start_time` datetime DEFAULT NULL COMMENT '开始执行时间',
     `end_time` datetime DEFAULT NULL COMMENT '结束执行时间',
     `duration` float DEFAULT NULL COMMENT '运行耗时',
@@ -56,4 +56,17 @@ CREATE TABLE `node` (
     `created_time` datetime DEFAULT NULL,
     `updated_time` datetime DEFAULT NULL,
     PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- 用户表
+CREATE TABLE `user` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `username` varchar(48) NOT NULL,
+    `password` varchar(128) NOT NULL,
+    `nickname` varchar(64) DEFAULT NULL,
+    `about` varchar(200) DEFAULT NULL,
+    `created_time` datetime DEFAULT NULL,
+    `updated_time` datetime DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `idx_uniq_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

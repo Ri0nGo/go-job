@@ -2,6 +2,7 @@ server:
   name: "master"
   ip: "0.0.0.0"
   port: 8080
+  key: "k6CswdUm77WKcbM68UQUuxVsHSpTCwgK"
 
 data:
   upload_job_dir: "./data/upload_job"
@@ -15,3 +16,4 @@ mysql:
   max_idle_conn: 2
   max_open_conn: 5
   show_sql: true
+

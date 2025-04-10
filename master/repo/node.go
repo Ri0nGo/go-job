@@ -19,20 +19,23 @@ type NodeRepo struct {
 }
 
 func (j *NodeRepo) QueryById(id int) (model.Node, error) {
-	var job model.Node
-	err := j.mysqlDB.First(&job, id).Error
-	return job, err
+	var node model.Node
+	err := j.mysqlDB.First(&node, id).Error
+	return node, err
 }
 
-func (j *NodeRepo) Inserts(jobs []model.Node) error {
-	if len(jobs) == 0 {
+func (j *NodeRepo) Inserts(nodes []model.Node) error {
+	if len(nodes) == 0 {
 		return nil
 	}
-	return j.mysqlDB.Create(&jobs).Error
+	return j.mysqlDB.Create(&nodes).Error
 }
 
-func (j *NodeRepo) Update(job model.Node) error {
-	return j.mysqlDB.Updates(&job).Error
+func (j *NodeRepo) Update(node model.Node) error {
+	if node.Id == 0 {
+		return ErrorIDIsZero
+	}
+	return j.mysqlDB.Updates(&node).Error
 }
 
 func (j *NodeRepo) Delete(id int) error {

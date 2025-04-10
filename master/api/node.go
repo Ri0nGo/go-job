@@ -33,7 +33,7 @@ func (a *NodeApi) RegisterRoutes(group *gin.RouterGroup) {
 	}
 }
 
-// GetNode 创建节点
+// GetNode 查询节点
 func (a *NodeApi) GetNode(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)

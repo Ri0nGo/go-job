@@ -12,6 +12,7 @@ type Server struct {
 	Port uint16
 	Name string
 	Ip   string
+	Key  string
 }
 
 type Data struct {

@@ -37,6 +37,9 @@ func (j *JobRepo) Insert(job *model.Job) error {
 }
 
 func (j *JobRepo) Update(job *model.Job) error {
+	if job.Id == 0 {
+		return ErrorIDIsZero
+	}
 	return j.mysqlDB.Updates(job).Error
 }
 
