@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/robfig/cron/v3"
+	"go-job/internal/dto"
 	"go-job/internal/model"
 	"go-job/internal/pkg/httpClient"
 	"go-job/internal/pkg/paths"
@@ -83,7 +84,7 @@ func (j *JobService) sendDataToNode(job model.Job, node model.Node) error {
 			return err
 		}
 		// 添加任务到节点
-		err = j.sendJobInNode(job, node, sendJobByCreate)
+		err = j.sendJobToNode(job, node, sendJobByCreate)
 		if err != nil {
 			return err
 		}
@@ -128,19 +129,13 @@ func (j *JobService) sendJobFileInNode(job model.Job, node model.Node) error {
 }
 
 // sendJobToNode 发送任务到节点
-func (j *JobService) sendJobInNode(job model.Job, node model.Node, operation jobOperation) error {
-	type reqJobNode struct {
-		Id       int            `json:"id"`
-		Name     string         `json:"name"`
-		ExecType model.ExecType `json:"exec_type"`
-		CronExpr string         `json:"cron_expr"`
-		Filename string         `json:"filename"`
-	}
-	req := reqJobNode{
+func (j *JobService) sendJobToNode(job model.Job, node model.Node, operation jobOperation) error {
+	req := dto.ReqJob{
 		Id:       job.Id,
 		Name:     job.Name,
 		ExecType: job.ExecType,
 		CronExpr: job.CronExpr,
+		Active:   job.Active,
 		Filename: job.Internal.FileMeta.UUIDFileName,
 	}
 
@@ -285,7 +280,7 @@ func (j *JobService) UpdateJob(job model.Job) error {
 	if err != nil {
 		return err
 	}
-	err = j.sendJobInNode(job, node, sendJobByUpdate)
+	err = j.sendJobToNode(job, node, sendJobByUpdate)
 	if err != nil {
 		return err
 	}

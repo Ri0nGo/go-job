@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"go-job/internal/dto"
 	"go-job/internal/model"
 	"go-job/node/pkg/executor"
@@ -35,24 +36,35 @@ func (s *JobService) AddJob(ctx context.Context, req dto.ReqJob) error {
 			"job name", req.Name)
 		return nil
 	}
+
+	jj, err := s.buildJobItem(ctx, req)
+	if err != nil {
+		return err
+	}
+	if req.Active == model.JobStart {
+		jj.Start()
+	}
+
+	job.AddJob(jj)
+	return nil
+}
+
+func (s *JobService) buildJobItem(ctx context.Context, req dto.ReqJob) (*job.Job, error) {
 	// 获取对于的执行器
 	exec, err := s.newExecutor(ctx, req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// 构造job对象
 	ctx, cancel := context.WithCancel(ctx)
 	jj := job.NewJob(ctx, cancel, req, exec)
 	if err = jj.BuildCrontab(); err != nil {
-		return err
+		return nil, err
 	}
 	// 设置状态回调事件
 	exec.OnResultChange(jj.OnResultChange)
-	jj.Start()
-
-	job.AddJob(jj)
-	return nil
+	return jj, nil
 }
 
 func (s *JobService) DeleteJob(ctx context.Context, id int) {
@@ -74,10 +86,15 @@ func (s *JobService) UpdateJob(ctx context.Context, req dto.ReqJob) error {
 	}
 	s.removeJob(j)
 
-	if err := s.AddJob(ctx, req); err != nil {
+	jj, err := s.buildJobItem(ctx, req)
+	if err != nil {
 		return err
 	}
+	if req.Active == model.JobStart {
+		jj.Start()
+	}
 
+	job.AddJob(jj)
 	return nil
 }
 
@@ -90,13 +107,9 @@ func (s *JobService) GetJob(ctx context.Context, id int) (*job.Job, error) {
 }
 
 func (s *JobService) newExecutor(ctx context.Context, req dto.ReqJob) (executor.IExecutor, error) {
-	var exec executor.IExecutor
-
-	switch req.ExecType {
-	case model.ExecTypeFile:
-		exec = executor.NewFileExecutor(req.Id, req.Name, req.Filename)
-	default:
-		return nil, errors.New("invalid exec type")
+	factory, ok := executor.GetExecutor(req.ExecType)
+	if !ok {
+		return nil, fmt.Errorf("unsupported executor type: %v", req.ExecType)
 	}
-	return exec, nil
+	return factory(req), nil
 }

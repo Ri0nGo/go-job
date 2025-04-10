@@ -45,6 +45,7 @@ func (h *JobHandler) AddJob(ctx *gin.Context) {
 
 	err := h.JobService.AddJob(ctx.Request.Context(), req)
 	if err != nil {
+		slog.Error("add job error", "req", req, "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.JobAddFailed)
 		return
 	}
@@ -72,7 +73,7 @@ func (h *JobHandler) UpdateJob(ctx *gin.Context) {
 	}
 	err := h.JobService.UpdateJob(ctx.Request.Context(), req)
 	if err != nil {
-		slog.Error("update job err:", "err", err)
+		slog.Error("update job error", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.JobUpdateFailed)
 		return
 	}
