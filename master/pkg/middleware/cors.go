@@ -25,11 +25,13 @@ func cors() gin.HandlerFunc {
 		)
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization,Session")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+		c.Writer.Header().Set("Access-Control-Expose-Headers", "Authorization")
 
 		if c.Request.Method == http.MethodOptions { //跨域预检请求
 			c.AbortWithStatus(200)
-		} else {
-			c.Next()
+			return
 		}
+		c.Next()
 	}
 }
