@@ -20,4 +20,5 @@ type Data struct {
 
 type Master struct {
 	Address string `mapstructure:"address"`
+	Key     string `mapstructure:"key"`
 }

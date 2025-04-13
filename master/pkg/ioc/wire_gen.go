@@ -14,11 +14,12 @@ import (
 	"go-job/master/repo"
 	"go-job/master/router"
 	"go-job/master/service"
+	"gorm.io/gorm"
 )
 
 // Injectors from wire.go:
 
-func InitWebServer() *gin.Engine {
+func InitWebServer() *WebContainer {
 	v := middleware.NewGinMiddlewares()
 	db := database.NewMySQLWithGORM()
 	iJobRepo := repo.NewJobRepo(db)
@@ -34,5 +35,18 @@ func InitWebServer() *gin.Engine {
 	iUserService := service.NewUserService(iUserRepo)
 	userApi := api.NewUserApi(iUserService)
 	engine := router.NewWebRouter(v, jobApi, jobRecordApi, nodeApi, userApi)
-	return engine
+	webContainer := &WebContainer{
+		Engine:  engine,
+		MysqlDB: db,
+		JobSvc:  iJobService,
+	}
+	return webContainer
+}
+
+// wire.go:
+
+type WebContainer struct {
+	Engine  *gin.Engine
+	MysqlDB *gorm.DB
+	JobSvc  service.IJobService
 }

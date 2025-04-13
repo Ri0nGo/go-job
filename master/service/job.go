@@ -20,8 +20,8 @@ import (
 type jobOperation string
 
 const (
-	sendJobByUpdate jobOperation = "sendJobByUpdate"
-	sendJobByCreate jobOperation = "sendJobByCreate"
+	SendJobByUpdate jobOperation = "sendJobByUpdate"
+	SendJobByCreate jobOperation = "sendJobByCreate"
 )
 
 type IJobService interface {
@@ -30,6 +30,7 @@ type IJobService interface {
 	AddJob(job model.Job) error
 	DeleteJob(id int) error
 	UpdateJob(job model.Job) error
+	SendJobToNode(job model.Job, node model.Node, operation jobOperation) error
 }
 
 type JobService struct {
@@ -42,7 +43,51 @@ func (j *JobService) GetJob(id int) (model.Job, error) {
 }
 
 func (j *JobService) GetJobList(page model.Page) (model.Page, error) {
-	return j.JobRepo.QueryList(page)
+	// 查询jobs
+	p, err := j.JobRepo.QueryList(page)
+	if err != nil {
+		return p, err
+	}
+
+	jobs, ok := p.Data.([]model.Job)
+	if !ok {
+		return p, errors.New("data isn't model job struct")
+	}
+
+	var (
+		data    []dto.RespJob
+		nodeIds []int
+	)
+	for _, v := range jobs {
+		nodeIds = append(nodeIds, v.NodeID)
+	}
+
+	// 查询node ids
+	nodes, err := j.NodeRepo.QueryByIds(nodeIds)
+	if err != nil {
+		return p, err
+	}
+	nodeMap := make(map[int]string)
+	for _, node := range nodes {
+		nodeMap[node.Id] = node.Name
+	}
+	// model.Job to dto.RespJob
+	for _, v := range jobs {
+		nodeIds = append(nodeIds, v.NodeID)
+		data = append(data, dto.RespJob{
+			Id:          v.Id,
+			Name:        v.Name,
+			ExecType:    v.ExecType,
+			CronExpr:    v.CronExpr,
+			Active:      v.Active,
+			NodeID:      v.NodeID,
+			NodeName:    nodeMap[v.NodeID],
+			FileName:    v.Internal.FileMeta.Filename,
+			CreatedTime: v.CreatedTime,
+		})
+	}
+	p.Data = data
+	return p, nil
 }
 
 func (j *JobService) AddJob(job model.Job) error {
@@ -84,7 +129,7 @@ func (j *JobService) sendDataToNode(job model.Job, node model.Node) error {
 			return err
 		}
 		// 添加任务到节点
-		err = j.sendJobToNode(job, node, sendJobByCreate)
+		err = j.SendJobToNode(job, node, SendJobByCreate)
 		if err != nil {
 			return err
 		}
@@ -129,7 +174,7 @@ func (j *JobService) sendJobFileInNode(job model.Job, node model.Node) error {
 }
 
 // sendJobToNode 发送任务到节点
-func (j *JobService) sendJobToNode(job model.Job, node model.Node, operation jobOperation) error {
+func (j *JobService) SendJobToNode(job model.Job, node model.Node, operation jobOperation) error {
 	req := dto.ReqJob{
 		Id:       job.Id,
 		Name:     job.Name,
@@ -147,17 +192,17 @@ func (j *JobService) sendJobToNode(job model.Job, node model.Node, operation job
 	url := fmt.Sprintf("http://%s%s", node.Address,
 		paths.NodeJobAPI.BasePath)
 	switch operation {
-	case sendJobByCreate:
+	case SendJobByCreate:
 		url = url + paths.NodeJobAPI.Create
-		resp, err = httpClient.PostJson(context.Background(), url, req, httpClient.DefaultTimeout)
+		resp, err = httpClient.PostJson(context.Background(), url, nil, req, httpClient.DefaultTimeout)
 		if err != nil {
 			slog.Error("send job to node error by create", "url", url,
 				"req", req, "err", err)
 			return err
 		}
-	case sendJobByUpdate:
+	case SendJobByUpdate:
 		url = url + paths.NodeJobAPI.Update
-		resp, err = httpClient.PutJson(context.Background(), url, req, httpClient.DefaultTimeout)
+		resp, err = httpClient.PutJson(context.Background(), url, nil, req, httpClient.DefaultTimeout)
 		if err != nil {
 			slog.Error("send job to node error by update", "url", url,
 				"req", req, "err", err)
@@ -181,7 +226,7 @@ func (j *JobService) sendJobToNode(job model.Job, node model.Node, operation job
 func (j *JobService) removeJobInNode(node model.Node, id int) error {
 	url := fmt.Sprintf("http://%s%s%s", node.Address,
 		paths.NodeJobAPI.BasePath, paths.NodeJobAPI.DeleteById(id)) // Note 感觉这种写法还是不太好，后面需要调整
-	resp, err := httpClient.Delete(context.Background(), url, httpClient.DefaultTimeout, nil)
+	resp, err := httpClient.Delete(context.Background(), url, nil, httpClient.DefaultTimeout, nil)
 	if err != nil {
 		slog.Error("remove job from node error by delete", "url", url,
 			"resp", resp, "err", err)
@@ -280,7 +325,7 @@ func (j *JobService) UpdateJob(job model.Job) error {
 	if err != nil {
 		return err
 	}
-	err = j.sendJobToNode(job, node, sendJobByUpdate)
+	err = j.SendJobToNode(job, node, SendJobByUpdate)
 	if err != nil {
 		return err
 	}

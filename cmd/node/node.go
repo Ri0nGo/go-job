@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"go-job/node/pkg/auth"
 	"go-job/node/pkg/config"
 	"go-job/node/router"
 )
@@ -18,7 +19,12 @@ func main() {
 		panic(err)
 	}
 
+	beforeRunWeb()
 	runWeb()
+}
+
+func beforeRunWeb() {
+	auth.InitJwtToken(config.App.Master.Key)
 }
 
 func runWeb() {

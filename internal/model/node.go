@@ -7,8 +7,8 @@ type Node struct {
 	Name        string    `json:"name" binding:"required"`
 	Description string    `json:"description"`
 	Address     string    `json:"address" binding:"required"`
-	CreatedAt   time.Time `json:"created_at" gorm:"column:created_time;autoCreateTime"`
-	UpdatedAt   time.Time `json:"updated_at" gorm:"column:updated_time;autoUpdateTime"`
+	CreatedTime time.Time `json:"created_at" gorm:"column:created_time;autoCreateTime"`
+	UpdatedTime time.Time `json:"updated_at" gorm:"column:updated_time;autoUpdateTime"`
 }
 
 func (Node) TableName() string {

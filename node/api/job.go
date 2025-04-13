@@ -92,7 +92,7 @@ func (h *JobHandler) GetJob(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.JobNotExist)
 		return
 	}
-	dto.NewJsonResp(ctx).Success(dto.RespJob{
+	dto.NewJsonResp(ctx).Success(dto.RespNodeJob{
 		Id:            job.JobMeta.Id,
 		Name:          job.JobMeta.Name,
 		ExecType:      job.JobMeta.ExecType,

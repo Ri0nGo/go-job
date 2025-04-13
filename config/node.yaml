@@ -5,6 +5,7 @@ server:
 
 master:
   address: 127.0.0.1:8080
+  key: "k6CswdUm77WKcbM68UQUuxVsHSpTCwgK"
   
 data:
   upload_job_dir: "./data/node_upload_job"

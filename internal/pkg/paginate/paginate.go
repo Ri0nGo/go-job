@@ -5,13 +5,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func PaginateList[T any](db *gorm.DB, pageNum, pageSize int) (model.Page, error) {
-	const (
-		defaultPageNum  = 1
-		defaultPageSize = 20
-		maxPageSize     = 100
-	)
+const (
+	defaultPageNum  = 1
+	defaultPageSize = 20
+	maxPageSize     = 100
+)
 
+func PaginateList[T any](db *gorm.DB, pageNum, pageSize int) (model.Page, error) {
 	if pageNum < 1 {
 		pageNum = defaultPageNum
 	}

@@ -36,11 +36,11 @@ func (s *UserService) GetUser(id int) (model.DomainUser, error) {
 
 func (s *UserService) userToDomainUser(user model.User) model.DomainUser {
 	return model.DomainUser{
-		Id:        user.Id,
-		Username:  user.Username,
-		Nickname:  user.Nickname,
-		CreatedAt: user.CreatedAt,
-		About:     user.About,
+		Id:          user.Id,
+		Username:    user.Username,
+		Nickname:    user.Nickname,
+		CreatedTime: user.CreatedTime,
+		About:       user.About,
 	}
 }
 

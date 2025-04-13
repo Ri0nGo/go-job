@@ -15,17 +15,20 @@ const (
 var (
 	ErrorTokenInvalid = errors.New("token is invalid")
 	ErrorTokenExpired = errors.New("token is expired")
+	ErrorTokenIsNil   = errors.New("token is nil")
 )
 
 type Option func(builder *JwtBuilder)
 
 type JwtBuilder struct {
+	key        []byte
 	expireTime time.Duration // 过期时间，单位秒
 }
 
-func NewJwtBuilder(opts ...Option) *JwtBuilder {
+func NewJwtBuilder(key string, opts ...Option) *JwtBuilder {
 	builder := &JwtBuilder{
 		expireTime: defaultExpireTime,
+		key:        []byte(key),
 	}
 	for _, opt := range opts {
 		opt(builder)
@@ -50,7 +53,7 @@ func (builder *JwtBuilder) GenerateToken(user model.DomainUser) (string, error) 
 		Uid: user.Id,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
-	tokenStr, err := token.SignedString([]byte(config.App.Server.Key))
+	tokenStr, err := token.SignedString([]byte(builder.key))
 	if err != nil {
 		return "", err
 	}

@@ -11,8 +11,8 @@ type User struct {
 	Password        string    `json:"password"`
 	Nickname        string    `json:"nickname"`
 	About           string    `json:"about"`
-	CreatedAt       time.Time `json:"created_at" gorm:"column:created_time;autoCreateTime"`
-	UpdatedAt       time.Time `json:"updated_at" gorm:"column:updated_time;autoUpdateTime"`
+	CreatedTime     time.Time `json:"created_at" gorm:"column:created_time;autoCreateTime"`
+	UpdatedTime     time.Time `json:"updated_at" gorm:"column:updated_time;autoUpdateTime"`
 	ConfirmPassword string    `json:"confirm_password" gorm:"-"`
 }
 
@@ -21,11 +21,11 @@ func (u *User) TableName() string {
 }
 
 type DomainUser struct {
-	Id        int       `json:"id"`
-	Username  string    `json:"username"`
-	Nickname  string    `json:"nickname"`
-	About     string    `json:"about"`
-	CreatedAt time.Time `json:"created_at"`
+	Id          int       `json:"id"`
+	Username    string    `json:"username"`
+	Nickname    string    `json:"nickname"`
+	About       string    `json:"about"`
+	CreatedTime time.Time `json:"created_time"`
 }
 
 func (u *DomainUser) TableName() string {

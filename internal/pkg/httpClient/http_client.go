@@ -16,39 +16,40 @@ var (
 	DefaultTimeout     = time.Second * 3
 )
 
-func PostJson(ctx context.Context, url string, body any, timeout time.Duration) (*resty.Response, error) {
+func PostJson(ctx context.Context, url string, headers map[string]string, body any, timeout time.Duration) (*resty.Response, error) {
+	jsonHeader(headers)
 	return defaultRestyClient.SetTimeout(timeout).R().
 		SetContext(ctx).
-		SetHeader("Content-Type", "application/json").
+		SetHeaders(headers).
 		SetBody(body).
 		Post(url)
 }
 
-func PutJson(ctx context.Context, url string, body any, timeout time.Duration) (*resty.Response, error) {
+func jsonHeader(header map[string]string) map[string]string {
+	if header == nil {
+		header = map[string]string{
+			"Content-Type": "application/json",
+		}
+	}
+	return header
+}
+func PutJson(ctx context.Context, url string, headers map[string]string, body any, timeout time.Duration) (*resty.Response, error) {
+	jsonHeader(headers)
 	return defaultRestyClient.SetTimeout(timeout).R().
 		SetContext(ctx).
-		SetHeader("Content-Type", "application/json").
+		SetHeaders(headers).
 		SetBody(body).
 		Put(url)
 }
 
-func Delete(ctx context.Context, url string, timeout time.Duration, params map[string]string) (*resty.Response, error) {
+func Delete(ctx context.Context, url string, headers map[string]string, timeout time.Duration, params map[string]string) (*resty.Response, error) {
+	jsonHeader(headers)
 	c := defaultRestyClient.SetTimeout(timeout).R().
 		SetContext(ctx)
 	if params != nil {
 		c.SetQueryParams(params)
 	}
 	return c.Delete(url)
-}
-
-func PostJsonWithAuth(ctx context.Context, url string, body any,
-	timeout time.Duration, auth string) (*resty.Response, error) {
-	return defaultRestyClient.SetTimeout(timeout).R().
-		SetContext(ctx).
-		SetHeader("Content-Type", "application/json").
-		SetAuthToken(auth).
-		SetBody(body).
-		Post(url)
 }
 
 // PostFormDataWithFile 发送含文件的form-data

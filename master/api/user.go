@@ -6,7 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"go-job/internal/dto"
 	"go-job/internal/model"
-	"go-job/master/pkg/auth"
+	"go-job/internal/pkg/auth"
+	"go-job/master/pkg/config"
 	"go-job/master/service"
 	"gorm.io/gorm"
 	"log/slog"
@@ -175,7 +176,7 @@ func (a *UserApi) Login(ctx *gin.Context) {
 	domainUser, err := a.UserService.Login(req.Username, req.Password)
 	switch err {
 	case nil:
-		token, err := auth.NewJwtBuilder().GenerateToken(domainUser)
+		token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateToken(domainUser)
 		if err != nil {
 			slog.Error("create token err", "err", err)
 			dto.NewJsonResp(ctx).Fail(dto.ServerError)

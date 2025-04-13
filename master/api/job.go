@@ -109,6 +109,7 @@ func (a *JobApi) DeleteJob(ctx *gin.Context) {
 func (a *JobApi) UpdateJob(ctx *gin.Context) {
 	var req model.Job
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		slog.Error("update job paras err:", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}

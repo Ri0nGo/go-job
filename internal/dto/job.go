@@ -2,9 +2,10 @@ package dto
 
 import (
 	"go-job/internal/model"
+	"time"
 )
 
-// ----------- node ----------- //
+// ----------- Node DTO ----------- //
 
 type ReqJob struct {
 	Id       int                 `json:"id"`
@@ -19,10 +20,24 @@ type ReqId struct {
 	Id int `json:"id" form:"id" binding:"required"`
 }
 
-type RespJob struct {
+type RespNodeJob struct {
 	Id            int             `json:"id"`
 	Name          string          `json:"name"`
 	ExecType      model.ExecType  `json:"exec_type"`
 	RunningStatus model.JobStatus `json:"running_status"`
-	FileName      string          `json:"file_name"`
+	FileName      string          `json:"filename"`
+}
+
+// ----------- Master DTO ----------- //
+
+type RespJob struct {
+	Id          int                 `json:"id"`
+	NodeID      int                 `json:"node_id"`
+	Name        string              `json:"name"`
+	ExecType    model.ExecType      `json:"exec_type"`
+	CronExpr    string              `json:"cron_expr"`
+	NodeName    string              `json:"node_name"`
+	Active      model.JobActiveType `json:"active"`
+	FileName    string              `json:"filename"`
+	CreatedTime time.Time           `json:"created_time"`
 }

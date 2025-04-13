@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"go-job/internal/model"
-	"go-job/master/pkg/auth"
+	"go-job/internal/pkg/auth"
 	"go-job/master/pkg/config"
 	"log/slog"
 	"net/http"
@@ -15,11 +15,14 @@ import (
 var defaultRefreshJwtTime = time.Minute * 5
 
 type LoginJwtMWBuilder struct {
+	key       string
 	skipPaths []string // 不需要校验jwt的path
 }
 
-func NewLoginJwtMWBuilder() *LoginJwtMWBuilder {
-	return &LoginJwtMWBuilder{}
+func NewLoginJwtMWBuilder(key string) *LoginJwtMWBuilder {
+	return &LoginJwtMWBuilder{
+		key: key,
+	}
 }
 
 func (builder *LoginJwtMWBuilder) SkipPaths(paths []string) *LoginJwtMWBuilder {
@@ -47,7 +50,7 @@ func (b *LoginJwtMWBuilder) Builder() gin.HandlerFunc {
 
 		// 校验token是否有效
 		uc := &model.UserClaims{}
-		jwtBuilder := auth.NewJwtBuilder()
+		jwtBuilder := auth.NewJwtBuilder(b.key)
 		token, err := jwtBuilder.ParseToken(uc, tokenStr)
 		if err != nil {
 			slog.Error("jwt parse token error", "err", err,

@@ -12,9 +12,16 @@ import (
 	"go-job/master/repo"
 	"go-job/master/router"
 	"go-job/master/service"
+	"gorm.io/gorm"
 )
 
-func InitWebServer() *gin.Engine {
+type WebContainer struct {
+	Engine  *gin.Engine
+	MysqlDB *gorm.DB
+	JobSvc  service.IJobService
+}
+
+func InitWebServer() *WebContainer {
 	wire.Build(
 		//database
 		database.NewMySQLWithGORM,
@@ -40,6 +47,8 @@ func InitWebServer() *gin.Engine {
 		// web
 		middleware.NewGinMiddlewares,
 		router.NewWebRouter,
+
+		wire.Struct(new(WebContainer), "*"),
 	)
-	return gin.Default()
+	return nil
 }

@@ -9,10 +9,21 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"sync"
 	"time"
 )
 
+var (
+	once    sync.Once
+	mysqlDb *gorm.DB
+)
+
 func NewMySQLWithGORM() *gorm.DB {
+	once.Do(initMySQLDBWithGorm)
+	return mysqlDb
+}
+
+func initMySQLDBWithGorm() {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		config.App.MySQL.Username,
 		config.App.MySQL.Password,
@@ -44,5 +55,6 @@ func NewMySQLWithGORM() *gorm.DB {
 	sqlDB.SetMaxIdleConns(config.App.MySQL.MaxIdleConn)
 	sqlDB.SetMaxOpenConns(config.App.MySQL.MaxOpenConn)
 	slog.Info("connect to mysql success")
-	return db
+
+	mysqlDb = db
 }
