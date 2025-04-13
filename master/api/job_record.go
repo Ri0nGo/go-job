@@ -73,12 +73,12 @@ func (a *JobRecordApi) AddJobRecord(ctx *gin.Context) {
 
 // GetJobRecordList 查询任务记录列表
 func (a *JobRecordApi) GetJobRecordList(ctx *gin.Context) {
-	var page model.Page
-	if err := ctx.ShouldBindQuery(&page); err != nil {
+	var req dto.ReqJobRecords
+	if err := ctx.ShouldBindQuery(&req); err != nil {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
-	list, err := a.JobRecordService.GetJobRecordList(page)
+	list, err := a.JobRecordService.GetJobRecordList(req.Page, req.JobId)
 	if err != nil {
 		slog.Error("get jobRecord list err:", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.JobRecordGetFailed)

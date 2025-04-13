@@ -11,7 +11,7 @@ type IJobRecordRepo interface {
 	Inserts([]model.JobRecord) error
 	Insert(*model.JobRecord) error
 	Delete(id int) error
-	QueryList(page model.Page) (model.Page, error)
+	QueryList(page model.Page, jobId int) (model.Page, error)
 }
 
 type JobRecordRepo struct {
@@ -39,8 +39,11 @@ func (j *JobRecordRepo) Delete(id int) error {
 	return j.mysqlDB.Where("id = ?", id).Delete(&model.JobRecord{}).Error
 }
 
-func (j *JobRecordRepo) QueryList(page model.Page) (model.Page, error) {
-	return paginate.PaginateList[model.JobRecord](j.mysqlDB, page.PageNum, page.PageSize)
+func (j *JobRecordRepo) QueryList(page model.Page, jobId int) (model.Page, error) {
+	// TODO 这里后面还需要优化查询方式，感觉还需要对分页查询做封装
+	return paginate.PaginateListV2[model.JobRecord](j.mysqlDB, page.PageNum, page.PageSize, func(db *gorm.DB) *gorm.DB {
+		return db.Where("job_id = ?", jobId).Order("id desc")
+	})
 }
 
 func NewJobRecordRepo(mysqlDB *gorm.DB) IJobRecordRepo {

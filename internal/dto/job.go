@@ -20,6 +20,11 @@ type ReqId struct {
 	Id int `json:"id" form:"id" binding:"required"`
 }
 
+type ReqJobRecords struct {
+	model.Page
+	JobId int `json:"job_id" form:"job_id" binding:"required"`
+}
+
 type RespNodeJob struct {
 	Id            int             `json:"id"`
 	Name          string          `json:"name"`

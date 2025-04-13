@@ -9,6 +9,7 @@ import (
 	"go-job/internal/model"
 	"go-job/internal/pkg/httpClient"
 	"go-job/internal/pkg/paths"
+	"go-job/internal/pkg/utils"
 	"go-job/internal/upload"
 	"go-job/master/pkg/config"
 	"go-job/master/repo"
@@ -63,7 +64,7 @@ func (j *JobService) GetJobList(page model.Page) (model.Page, error) {
 	}
 
 	// 查询node ids
-	nodes, err := j.NodeRepo.QueryByIds(nodeIds)
+	nodes, err := j.NodeRepo.QueryByIds(utils.RemoveDuplicate(nodeIds))
 	if err != nil {
 		return p, err
 	}

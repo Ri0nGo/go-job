@@ -8,7 +8,7 @@ import (
 
 type IJobRecordService interface {
 	GetJobRecord(id int) (model.JobRecord, error)
-	GetJobRecordList(page model.Page) (model.Page, error)
+	GetJobRecordList(page model.Page, jobId int) (model.Page, error)
 	AddJobRecord(req model.CallbackJobResult) error
 	DeleteJobRecord(id int) error
 }
@@ -21,8 +21,8 @@ func (s *JobRecordService) GetJobRecord(id int) (model.JobRecord, error) {
 	return s.JobRecordRepo.QueryById(id)
 }
 
-func (s *JobRecordService) GetJobRecordList(page model.Page) (model.Page, error) {
-	return s.JobRecordRepo.QueryList(page)
+func (s *JobRecordService) GetJobRecordList(page model.Page, jobId int) (model.Page, error) {
+	return s.JobRecordRepo.QueryList(page, jobId)
 }
 
 func (s *JobRecordService) AddJobRecord(req model.CallbackJobResult) error {
