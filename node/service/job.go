@@ -9,6 +9,7 @@ import (
 	"go-job/node/pkg/executor"
 	"go-job/node/pkg/job"
 	"log/slog"
+	"time"
 )
 
 var (
@@ -75,7 +76,13 @@ func (s *JobService) DeleteJob(ctx context.Context, id int) {
 
 func (s *JobService) removeJob(j *job.Job) {
 	j.Cancel()
-	j.Stop()
+	ctx := j.Stop()
+	select {
+	case <-ctx.Done():
+	case <-time.After(5 * time.Second):
+		slog.Error("job stop timeout", "job id", j.JobMeta.Id,
+			"job name", j.JobMeta.Name)
+	}
 	job.RemoveJob(j.JobMeta.Id)
 }
 

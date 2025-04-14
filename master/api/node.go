@@ -74,6 +74,7 @@ func (a *NodeApi) GetNodeList(ctx *gin.Context) {
 func (a *NodeApi) AddNode(ctx *gin.Context) {
 	var req model.Node
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		slog.Error("add node params err", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}

@@ -25,7 +25,7 @@ func CallbackJobResult(result model.CallbackJobResult) {
 	url := fmt.Sprintf("http://%s%s", config.App.Master.Address, paths.JobRecordCreateAPI)
 	resp, err := httpClient.PostJson(context.Background(), url, header, result, httpClient.DefaultTimeout)
 	if err != nil {
-		slog.Error("callback result error", err, "url", url, "resp", resp, "err", err)
+		slog.Error("callback result error", "url", url, "resp", resp, "err", err)
 		return
 	}
 	parseContent, err := httpClient.ParseResponse(resp)

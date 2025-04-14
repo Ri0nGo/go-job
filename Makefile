@@ -39,3 +39,17 @@ clean:
 	@rm -rf data/$(NODE_UPLOAD_JOB_DIR)
 
 endif
+
+
+.PHONY:
+docker-build:
+	@nowtime=$$(date +%Y%m%d%H%M%S) && \
+	rm -rf /cicd/projects/go-job && \
+	git clone git@github.com:Ri0nGo/go-job.git /cicd/projects/go-job && \
+	cd /cicd/projects/go-job && \
+	go env -w GOPROXY=https://goproxy.cn,direct && \
+	go env -w GO111MODULE=on && \
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./build/node/go-job-node cmd/master/master.go && \
+	cp node/Dockerfile ./build/node && \
+	cd ./build/node && \
+	docker build -t go-job-node:$$nowtime . -f Dockerfile
