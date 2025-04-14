@@ -41,3 +41,19 @@ node
 ├─router           # 路由层
 └─service          # service层
 ```
+
+## 容器运行说明
+
+### docker 启动master节点
+
+```shell
+make build-master-image
+docker run -d --name go-job-node -v $(pwd)/master.yaml:/app/config/master.yaml -p 8080:8080 <BUILD_DOCKER_IMAGE>
+```
+
+### docker 启动 python 环境的 node节点
+
+```shell
+make build-node-py-image  PIP_FILE=/your/pip.txt
+docker run -d --name go-job-node -v $(pwd)/node.yaml:/app/config/node.yaml -p 8081:8081 <BUILD_DOCKER_IMAGE>
+```
