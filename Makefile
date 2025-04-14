@@ -77,14 +77,11 @@ build-master-image:
 
 .PHONY:
 
-
-
-# 必须传递pip文件
-ifndef PIP_FILE
-$(error PIP_FILE is not set. Please run with: make docker-build-node PIP_FILE=/your/pip.txt)
-endif
-
 build-node-py-image:
+	@if [ -z "$(PIP_FILE)" ]; then \
+		echo "Error: PIP_FILE is not set. Please run with: make build-node-py-image PIP_FILE=/your/pip.txt"; \
+		exit 1; \
+	fi
 	@echo ">>> 开始构建 go-job node 镜像: $(NODE_IMAGE)"
 	@rm -rf $(BUILD_DIR)
 	@git clone git@github.com:Ri0nGo/go-job.git $(BUILD_DIR)
