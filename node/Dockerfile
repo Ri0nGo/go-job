@@ -14,7 +14,7 @@ COPY ./${PIP_NAME} ${APP_ROOT}
 RUN mkdir ~/.pip \
     && mkdir -p ${APP_ROOT}/config \
     && printf '[global]\nindex-url=https://mirrors.aliyun.com/pypi/simple/' > ~/.pip/pip.conf \
-    && pip install -no-cache-dir -r ${APP_ROOT}${PIP_NAME}
+    && pip install --no-cache-dir -r ${APP_ROOT}${PIP_NAME}
 
 CMD ["/bin/sh", "-c", "$RUN"]
 
