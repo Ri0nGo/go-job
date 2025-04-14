@@ -44,7 +44,7 @@ node
 
 ## 容器运行说明
 
-### docker 启动master节点
+### docker 启动 master节点
 
 ```shell
 make build-master-image
