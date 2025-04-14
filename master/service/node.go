@@ -1,15 +1,9 @@
 package service
 
 import (
-	"errors"
 	"go-job/internal/model"
 	"go-job/internal/pkg/utils"
 	"go-job/master/repo"
-)
-
-var (
-	errInvalidAddress    = errors.New("invalid address")
-	ErrJobUseCurrentNode = errors.New("存在任务使用当前节点，无法删除")
 )
 
 type INodeService interface {
@@ -35,7 +29,7 @@ func (s *NodeService) GetNodeList(page model.Page) (model.Page, error) {
 
 func (s *NodeService) AddNode(node model.Node) error {
 	if !utils.IsValidIPv4Address(node.Address) {
-		return errInvalidAddress
+		return ErrInvalidAddress
 	}
 	return s.NodeRepo.Inserts([]model.Node{node})
 }
@@ -53,7 +47,7 @@ func (s *NodeService) DeleteNode(id int) error {
 
 func (s *NodeService) UpdateNode(node model.Node) error {
 	if !utils.IsValidIPv4Address(node.Address) {
-		return errInvalidAddress
+		return ErrInvalidAddress
 	}
 	return s.NodeRepo.Update(node)
 }

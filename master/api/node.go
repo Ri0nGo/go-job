@@ -79,10 +79,13 @@ func (a *NodeApi) AddNode(ctx *gin.Context) {
 		return
 	}
 
-	err := a.NodeService.AddNode(req)
-	if err != nil {
+	if err := a.NodeService.AddNode(req); err != nil {
 		slog.Error("add node err:", "err", err)
-		dto.NewJsonResp(ctx).Fail(dto.NodeAddFailed)
+		if service.IsRespErr(err) {
+			dto.NewJsonResp(ctx).FailWithMsg(dto.NodeAddFailed, err.Error())
+		} else {
+			dto.NewJsonResp(ctx).Fail(dto.NodeAddFailed)
+		}
 		return
 	}
 	dto.NewJsonResp(ctx).Success()
@@ -99,10 +102,9 @@ func (a *NodeApi) DeleteNode(ctx *gin.Context) {
 
 	if err := a.NodeService.DeleteNode(id); err != nil {
 		slog.Error("delete node err:", "err", err)
-		switch {
-		case errors.Is(err, service.ErrJobUseCurrentNode):
+		if service.IsRespErr(err) {
 			dto.NewJsonResp(ctx).FailWithMsg(dto.NodeDeleteFailed, err.Error())
-		default:
+		} else {
 			dto.NewJsonResp(ctx).Fail(dto.NodeDeleteFailed)
 		}
 		return

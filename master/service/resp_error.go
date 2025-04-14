@@ -9,6 +9,8 @@ var (
 	ErrJobExtNotSupport   = errors.New("不支持的文件后缀")
 	ErrNodeNotExists      = errors.New("节点不存在")
 	ErrFileTooLarge       = errors.New("文件太大了")
+	ErrInvalidAddress     = errors.New("填写的地址格式不合法，格式：Ip:Port")
+	ErrJobUseCurrentNode  = errors.New("有任务依赖该节点，无法删除")
 )
 
 var returnErrList = []error{
@@ -17,6 +19,9 @@ var returnErrList = []error{
 	ErrSyncExecFileToNode,
 	ErrJobExtNotSupport,
 	ErrNodeNotExists,
+	ErrFileTooLarge,
+	ErrInvalidAddress,
+	ErrJobUseCurrentNode,
 }
 
 func IsRespErr(err error) bool {
