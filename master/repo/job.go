@@ -8,6 +8,7 @@ import (
 
 type IJobRepo interface {
 	QueryById(id int) (model.Job, error)
+	QueryByNodeId(nodeId int) ([]model.Job, error)
 	Insert(*model.Job) error
 	Inserts([]model.Job) error
 	Update(*model.Job) error
@@ -45,6 +46,12 @@ func (j *JobRepo) Update(job *model.Job) error {
 
 func (j *JobRepo) Delete(id int) error {
 	return j.mysqlDB.Where("id = ?", id).Delete(&model.Job{}).Error
+}
+
+func (j *JobRepo) QueryByNodeId(nodeId int) ([]model.Job, error) {
+	var jobs []model.Job
+	err := j.mysqlDB.Where("node_id = ?", nodeId).Find(&jobs).Error
+	return jobs, err
 }
 
 func (j *JobRepo) QueryList(page model.Page) (model.Page, error) {

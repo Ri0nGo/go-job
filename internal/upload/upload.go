@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	errFileTooLarge        = errors.New("file too large")
-	errFileExtNotSupported = errors.New("file extension not supported")
+	ErrFileTooLarge        = errors.New("file too large")
+	ErrFileExtNotSupported = errors.New("file extension not supported")
 )
 
 // FileMeta 文件信息
@@ -85,14 +85,14 @@ func FileUploadOpts(opts ...Option) {
 
 func FileExtValidator(fileMeta FileMeta) error {
 	if ok := slice.Contains(defaultFu.exts, filepath.Ext(fileMeta.Filename)); !ok {
-		return errFileExtNotSupported
+		return ErrFileExtNotSupported
 	}
 	return nil
 }
 
 func FileSizeValidator(fileMeta FileMeta) error {
 	if fileMeta.Size > defaultFu.size {
-		return errFileTooLarge
+		return ErrFileTooLarge
 	}
 	return nil
 }

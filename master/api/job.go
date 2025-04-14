@@ -82,12 +82,16 @@ func (a *JobApi) AddJob(ctx *gin.Context) {
 		return
 	}
 
-	err := a.JobService.AddJob(req)
-	if err != nil {
-		slog.Error("add job err:", "err", err)
-		dto.NewJsonResp(ctx).Fail(dto.JobAddFailed)
+	if err := a.JobService.AddJob(req); err != nil {
+		slog.Error("add job error", "err", err)
+		if service.IsRespErr(err) {
+			dto.NewJsonResp(ctx).FailWithMsg(dto.JobAddFailed, err.Error())
+		} else {
+			dto.NewJsonResp(ctx).Fail(dto.JobAddFailed)
+		}
 		return
 	}
+
 	dto.NewJsonResp(ctx).Success()
 }
 
@@ -116,7 +120,11 @@ func (a *JobApi) UpdateJob(ctx *gin.Context) {
 
 	if err := a.JobService.UpdateJob(req); err != nil {
 		slog.Error("update job err:", "err", err)
-		dto.NewJsonResp(ctx).Fail(dto.JobUpdateFailed)
+		if service.IsRespErr(err) {
+			dto.NewJsonResp(ctx).FailWithMsg(dto.JobUpdateFailed, err.Error())
+		} else {
+			dto.NewJsonResp(ctx).Fail(dto.JobUpdateFailed)
+		}
 		return
 	}
 	dto.NewJsonResp(ctx).Success()
@@ -141,6 +149,12 @@ func (a *JobApi) UploadFile(ctx *gin.Context) {
 	}
 	if err = upload.ValidatorFileOpts(fileMeta,
 		upload.FileExtValidator, upload.FileSizeValidator); err != nil {
+		switch {
+		case errors.Is(err, upload.ErrFileTooLarge):
+			err = service.ErrFileTooLarge
+		case errors.Is(err, upload.ErrFileExtNotSupported):
+			err = service.ErrJobExtNotSupport
+		}
 		dto.NewJsonResp(ctx).FailWithMsg(dto.FileValidError, err.Error())
 		return
 	}

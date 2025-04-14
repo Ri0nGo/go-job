@@ -97,12 +97,13 @@ func (j *JobService) AddJob(job model.Job) error {
 	}
 
 	if err := j.parseCrontab(job.CronExpr); err != nil {
-		return err
+		slog.Error("parse crontab error", "err", err)
+		return ErrCronExprParse
 	}
 
 	node, err := j.NodeRepo.QueryById(job.NodeID)
 	if err != nil {
-		return errors.New("node not found")
+		return ErrNodeNotExists
 	}
 
 	// 将数据插入数据库
@@ -115,8 +116,17 @@ func (j *JobService) AddJob(job model.Job) error {
 	// 后面需要有个后台协程定期检测重新发送
 	err = j.sendDataToNode(job, node)
 	if err != nil {
-		return err
+		if job.Id != 0 {
+			if err := j.JobRepo.Delete(job.Id); err != nil {
+				slog.Error("delete job error in send data to node", "err", err)
+			}
+		}
+		slog.Error("send job error in send data to node", "err", err)
+		return ErrSyncJobToNode
 	}
+
+	// 清除缓存中的文件
+	upload.DeleteFileMeta(job.FileKey)
 
 	return nil
 }
@@ -127,16 +137,17 @@ func (j *JobService) sendDataToNode(job model.Job, node model.Node) error {
 		// 发送文件到节点
 		err := j.sendJobFileInNode(job, node)
 		if err != nil {
-			return err
+			slog.Error("send job file in node error", "err", err)
+			return ErrSyncExecFileToNode
 		}
 		// 添加任务到节点
 		err = j.SendJobToNode(job, node, SendJobByCreate)
 		if err != nil {
-			return err
+			slog.Error("send job to node error", "err", err)
+			return ErrSyncJobToNode
 		}
 	default:
-		return errors.New("not support exec type")
-
+		return ErrJobExtNotSupport
 	}
 	return nil
 }
@@ -255,9 +266,8 @@ func (j *JobService) parseExecType(job *model.Job) error {
 			return errors.New("file not exist")
 		}
 		job.Internal.FileMeta = fileMeta
-		upload.DeleteFileMeta(job.FileKey)
 	default:
-		return errors.New("not support exec type")
+		return ErrJobExtNotSupport
 	}
 	return nil
 }
@@ -285,8 +295,10 @@ func (j *JobService) DeleteJob(id int) error {
 
 func (j *JobService) UpdateJob(job model.Job) error {
 	if err := j.parseCrontab(job.CronExpr); err != nil {
-		return err
+		slog.Error("parse crontab error", "err", err)
+		return ErrCronExprParse
 	}
+
 	dbJob, err := j.GetJob(job.Id)
 	if err != nil {
 		return err
@@ -312,7 +324,8 @@ func (j *JobService) UpdateJob(job model.Job) error {
 			upload.DeleteFileMeta(job.FileKey)
 			err = j.sendJobFileInNode(job, node)
 			if err != nil {
-				return err
+				slog.Error("send job file to node error", "err", err)
+				return ErrSyncExecFileToNode
 			}
 		} else {
 			// 没有更新文件，则需要将数据库中的文件信息获取到，发送给node
@@ -328,7 +341,11 @@ func (j *JobService) UpdateJob(job model.Job) error {
 	}
 	err = j.SendJobToNode(job, node, SendJobByUpdate)
 	if err != nil {
-		return err
+		// TODO 回退job，是否要使用事务回滚？目前没有，担心http请求会阻塞job表
+		if err := j.JobRepo.Update(&dbJob); err != nil {
+			slog.Error("send job to node error in update job", "err", err)
+		}
+		return ErrSyncExecFileToNode
 	}
 	return nil
 }

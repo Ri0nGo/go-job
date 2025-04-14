@@ -18,14 +18,14 @@ func TestValidatorFileOpts(t *testing.T) {
 				Filename: "test.txt",
 			},
 			validator: []ValidatorOptions{FileExtValidator},
-			err:       errFileExtNotSupported,
+			err:       ErrFileExtNotSupported,
 		}, {
 			name: "size to large",
 			input: FileMeta{
 				Size: 10 * 1024 * 1024,
 			},
 			validator: []ValidatorOptions{FileSizeValidator},
-			err:       errFileTooLarge,
+			err:       ErrFileTooLarge,
 		}, {
 			name: "ext success",
 			input: FileMeta{

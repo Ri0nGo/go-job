@@ -96,9 +96,15 @@ func (a *NodeApi) DeleteNode(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
+
 	if err := a.NodeService.DeleteNode(id); err != nil {
 		slog.Error("delete node err:", "err", err)
-		dto.NewJsonResp(ctx).Fail(dto.NodeDeleteFailed)
+		switch {
+		case errors.Is(err, service.ErrJobUseCurrentNode):
+			dto.NewJsonResp(ctx).FailWithMsg(dto.NodeDeleteFailed, err.Error())
+		default:
+			dto.NewJsonResp(ctx).Fail(dto.NodeDeleteFailed)
+		}
 		return
 	}
 	dto.NewJsonResp(ctx).Success()

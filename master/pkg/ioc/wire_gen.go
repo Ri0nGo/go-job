@@ -29,7 +29,7 @@ func InitWebServer() *WebContainer {
 	iJobRecordRepo := repo.NewJobRecordRepo(db)
 	iJobRecordService := service.NewJobRecordService(iJobRecordRepo)
 	jobRecordApi := api.NewJobRecordApi(iJobRecordService)
-	iNodeService := service.NewNodeService(iNodeRepo)
+	iNodeService := service.NewNodeService(iNodeRepo, iJobRepo)
 	nodeApi := api.NewNodeApi(iNodeService)
 	iUserRepo := repo.NewUserRepo(db)
 	iUserService := service.NewUserService(iUserRepo)

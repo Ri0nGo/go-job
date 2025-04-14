@@ -7,7 +7,10 @@ import (
 	"go-job/master/repo"
 )
 
-var errInvalidAddress = errors.New("invalid address")
+var (
+	errInvalidAddress    = errors.New("invalid address")
+	ErrJobUseCurrentNode = errors.New("存在任务使用当前节点，无法删除")
+)
 
 type INodeService interface {
 	GetNode(id int) (model.Node, error)
@@ -19,6 +22,7 @@ type INodeService interface {
 
 type NodeService struct {
 	NodeRepo repo.INodeRepo
+	JobRepo  repo.IJobRepo
 }
 
 func (s *NodeService) GetNode(id int) (model.Node, error) {
@@ -37,6 +41,13 @@ func (s *NodeService) AddNode(node model.Node) error {
 }
 
 func (s *NodeService) DeleteNode(id int) error {
+	nodes, err := s.JobRepo.QueryByNodeId(id)
+	if err != nil {
+		return err
+	}
+	if len(nodes) > 0 {
+		return ErrJobUseCurrentNode
+	}
 	return s.NodeRepo.Delete(id)
 }
 
@@ -47,8 +58,9 @@ func (s *NodeService) UpdateNode(node model.Node) error {
 	return s.NodeRepo.Update(node)
 }
 
-func NewNodeService(nodeRepo repo.INodeRepo) INodeService {
+func NewNodeService(nodeRepo repo.INodeRepo, jobRepo repo.IJobRepo) INodeService {
 	return &NodeService{
 		NodeRepo: nodeRepo,
+		JobRepo:  jobRepo,
 	}
 }
