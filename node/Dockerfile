@@ -1,3 +1,14 @@
+FROM golang:1.24 AS builder
+
+WORKDIR /app
+
+COPY . .
+
+RUN go env -w GOPROXY=https://goproxy.cn,direct && \
+    go env -w GO111MODULE=on && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app/go-job-node cmd/node/node.go
+
+
 FROM python:3.13.3-alpine3.21
 
 ARG PIP_NAME=pip.txt
@@ -8,7 +19,7 @@ USER root
 
 WORKDIR ${APP_ROOT}
 
-COPY ./${APP_NAME}  ${APP_ROOT}
+COPY --from=builder ${APP_ROOT}${APP_NAME} ${APP_ROOT}
 COPY ./${PIP_NAME} ${APP_ROOT}
 
 RUN mkdir ~/.pip \
