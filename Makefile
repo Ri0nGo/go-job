@@ -67,12 +67,8 @@ build-master-image:
 	@rm -rf $(BUILD_DIR)
 	@git clone git@github.com:Ri0nGo/go-job.git $(BUILD_DIR)
 	@cd $(BUILD_DIR) && \
-		go env -w GOPROXY=https://goproxy.cn,direct && \
-		go env -w GO111MODULE=on && \
-		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./build/master/go-job-master cmd/master/master.go && \
-		cp master/Dockerfile ./build/master && \
-		cd ./build/master && \
-		docker build -t $(MASTER_IMAGE) . -f Dockerfile
+			cp master/Dockerfile . && \
+			docker build -t $(MASTER_IMAGE) . -f Dockerfile
 	@echo ">>> 镜像构建完成: $(MASTER_IMAGE)"
 
 .PHONY:
@@ -86,11 +82,6 @@ build-node-py-image:
 	@rm -rf $(BUILD_DIR)
 	@git clone git@github.com:Ri0nGo/go-job.git $(BUILD_DIR)
 	@cd $(BUILD_DIR) && \
-		go env -w GOPROXY=https://goproxy.cn,direct && \
-		go env -w GO111MODULE=on && \
-		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./build/node/go-job-node cmd/node/node.go && \
-		cp node/Dockerfile ./build/node && \
-		cp $(PIP_FILE) ./build/node && \
-		cd ./build/node && \
+		cp node/Dockerfile . && \
 		docker build -t $(NODE_IMAGE) . -f Dockerfile
 	@echo ">>> 镜像构建完成: $(NODE_IMAGE)"
