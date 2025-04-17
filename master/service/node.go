@@ -2,7 +2,6 @@ package service
 
 import (
 	"go-job/internal/model"
-	"go-job/internal/pkg/utils"
 	"go-job/master/repo"
 )
 
@@ -28,9 +27,9 @@ func (s *NodeService) GetNodeList(page model.Page) (model.Page, error) {
 }
 
 func (s *NodeService) AddNode(node model.Node) error {
-	if !utils.IsValidIPv4Address(node.Address) {
-		return ErrInvalidAddress
-	}
+	//if !utils.IsValidIPv4Address(node.Address) {
+	//	return ErrInvalidAddress
+	//}
 	return s.NodeRepo.Inserts([]model.Node{node})
 }
 
@@ -46,9 +45,9 @@ func (s *NodeService) DeleteNode(id int) error {
 }
 
 func (s *NodeService) UpdateNode(node model.Node) error {
-	if !utils.IsValidIPv4Address(node.Address) {
-		return ErrInvalidAddress
-	}
+	//if !utils.IsValidIPv4Address(node.Address) {
+	//	return ErrInvalidAddress
+	//}
 	return s.NodeRepo.Update(node)
 }
 
