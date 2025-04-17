@@ -25,3 +25,7 @@ docker run -d --name go-job-node -v $(pwd)/master.yaml:/app/config/master.yaml -
 make build-node-py-image  PIP_FILE=/your/pip.txt
 docker run -d --name go-job-node -v $(pwd)/node.yaml:/app/config/node.yaml -p 8081:8081 <BUILD_DOCKER_IMAGE>
 ```
+
+## 前端地址
+
+👉 [Ri0nGo/go-job-admin](https://github.com/Ri0nGo/go-job-admin)
