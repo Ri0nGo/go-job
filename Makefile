@@ -23,7 +23,7 @@ run-n:
 	@echo "running node $(APP_NODE_NAME)..."
 	go run cmd/node/node.go
 
-.PHONY:
+.PHONY: build-node
 build-node:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./build/node/go-job-node cmd/master/master.go
 

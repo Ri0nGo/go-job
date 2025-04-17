@@ -8,7 +8,7 @@ import (
 const (
 	defaultPageNum  = 1
 	defaultPageSize = 20
-	maxPageSize     = 100
+	maxPageSize     = 50
 )
 
 func PaginateList[T any](db *gorm.DB, pageNum, pageSize int) (model.Page, error) {
