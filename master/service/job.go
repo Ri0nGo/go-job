@@ -112,8 +112,7 @@ func (j *JobService) AddJob(job model.Job) error {
 		return err
 	}
 
-	// 发送任务到节点中，若该任务发送失败，则将任务同步状态标记为异常
-	// 后面需要有个后台协程定期检测重新发送
+	// 发送任务到节点中
 	err = j.sendDataToNode(job, node)
 	if err != nil {
 		if job.Id != 0 {

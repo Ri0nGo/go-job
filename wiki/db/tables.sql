@@ -65,9 +65,11 @@ CREATE TABLE `user` (
     `username` varchar(48) NOT NULL,
     `password` varchar(128) NOT NULL,
     `nickname` varchar(64) DEFAULT NULL,
+    `email` varchar(255) DEFAULT NULL,
     `about` varchar(200) DEFAULT NULL,
     `created_time` datetime DEFAULT NULL,
     `updated_time` datetime DEFAULT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `idx_uniq_username` (`username`)
+    UNIQUE KEY `idx_uniq_username` (`username`),
+    UNIQUE KEY `idx_uniq_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

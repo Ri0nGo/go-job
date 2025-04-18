@@ -5,12 +5,19 @@ import (
 	"time"
 )
 
+type UserBindType int8
+
+const (
+	UserBindEmail UserBindType = iota + 1
+)
+
 type User struct {
 	Id              int       `json:"id" gorm:"primary_key"`
 	Username        string    `json:"username"`
 	Password        string    `json:"password"`
 	Nickname        string    `json:"nickname"`
 	About           string    `json:"about"`
+	Email           string    `json:"email"`
 	CreatedTime     time.Time `json:"created_at" gorm:"column:created_time;autoCreateTime"`
 	UpdatedTime     time.Time `json:"updated_at" gorm:"column:updated_time;autoUpdateTime"`
 	ConfirmPassword string    `json:"confirm_password" gorm:"-"`
@@ -25,6 +32,7 @@ type DomainUser struct {
 	Username    string    `json:"username"`
 	Nickname    string    `json:"nickname"`
 	About       string    `json:"about"`
+	Email       string    `json:"email"`
 	CreatedTime time.Time `json:"created_time"`
 }
 

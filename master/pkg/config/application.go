@@ -6,6 +6,7 @@ type Application struct {
 	Server Server
 	Data   Data
 	MySQL  MySQL
+	SMTP   SMTP
 }
 
 type Server struct {
@@ -28,4 +29,11 @@ type MySQL struct {
 	MaxIdleConn int    `mapstructure:"max_idle_conn"`
 	MaxOpenConn int    `mapstructure:"max_open_conn"`
 	ShowSQL     bool   `mapstructure:"show_sql"`
+}
+
+type SMTP struct {
+	Sender   string `mapstructure:"sender"`
+	Key      string `mapstructure:"key"`
+	SMTPHost string `mapstructure:"smtp_host"`
+	SMTPPort int    `mapstructure:"smtp_port"`
 }

@@ -17,3 +17,8 @@ mysql:
   max_open_conn: 5
   show_sql: true
 
+smtp:
+  sender: "xxx@xx.com"
+  key: xxx
+  smtp_host: "xx"
+  smtp_port: 0

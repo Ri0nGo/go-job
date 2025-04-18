@@ -39,7 +39,7 @@ run-wire-m: wire-gen
 .PHONY: run-m
 run-m:
 	@echo "run master"
-	go run cmd/master/master.go
+	go run cmd/master/master.go  -c ./config/master-prod.yaml
 
 .PHONY: clean
 

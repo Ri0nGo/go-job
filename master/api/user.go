@@ -41,6 +41,8 @@ func (a *UserApi) RegisterRoutes(group *gin.RouterGroup) {
 		userGroup.PUT("/update", a.UpdateUser)
 		userGroup.DELETE("/:id", a.DeleteUser)
 		userGroup.POST("/login", a.Login)
+
+		userGroup.POST("/bind", a.Bind)
 	}
 }
 
@@ -191,4 +193,14 @@ func (a *UserApi) Login(ctx *gin.Context) {
 	default:
 		dto.NewJsonResp(ctx).Fail(dto.UserLoginErr)
 	}
+}
+
+// Bind 绑定邮箱
+func (a *UserApi) Bind(ctx *gin.Context) {
+	var req dto.ReqUserBind
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
+		return
+	}
+
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"go-job/internal/dto"
 	"go-job/internal/model"
 	"go-job/master/repo"
 	"golang.org/x/crypto/bcrypt"
@@ -17,9 +18,11 @@ type IUserService interface {
 	GetUser(id int) (model.DomainUser, error)
 	Login(username string, password string) (model.DomainUser, error)
 	GetUserList(page model.Page) (model.Page, error)
-	AddUser(job model.User) (model.User, error)
+	AddUser(user model.User) (model.User, error)
 	DeleteUser(id int) error
-	UpdateUser(job model.DomainUser) error
+	UpdateUser(user model.DomainUser) error
+
+	UserBind(req dto.ReqUserBind) (err error)
 }
 
 type UserService struct {
@@ -96,6 +99,11 @@ func (s *UserService) Login(username, password string) (model.DomainUser, error)
 		return s.userToDomainUser(user), ErrInvalidUserOrPassword
 	}
 	return s.userToDomainUser(user), nil
+}
+
+func (s *UserService) UserBind(req dto.ReqUserBind) (err error) {
+
+	return nil
 }
 
 func NewUserService(userRepo repo.IUserRepo) IUserService {
