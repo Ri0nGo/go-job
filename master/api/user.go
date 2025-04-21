@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-gonic/gin"
@@ -9,6 +10,7 @@ import (
 	"go-job/internal/pkg/auth"
 	"go-job/internal/pkg/utils"
 	"go-job/master/pkg/config"
+	"go-job/master/repo/cache"
 	"go-job/master/service"
 	"gorm.io/gorm"
 	"log/slog"
@@ -18,17 +20,20 @@ import (
 const (
 	// 官方自带的regexp 不能识别 ?= 这样的正则表达式
 	passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$`
+	biz                  = "user"
 )
 
 type UserApi struct {
 	passwordRegex *regexp.Regexp
-	UserService   service.IUserService
+	userService   service.IUserService
+	codeSvc       service.IEmailCodeService
 }
 
-func NewUserApi(userService service.IUserService) *UserApi {
+func NewUserApi(userService service.IUserService, codeSvc service.IEmailCodeService) *UserApi {
 	return &UserApi{
 		passwordRegex: regexp.MustCompile(passwordRegexPattern, regexp.None),
-		UserService:   userService,
+		userService:   userService,
+		codeSvc:       codeSvc,
 	}
 }
 
@@ -43,8 +48,8 @@ func (a *UserApi) RegisterRoutes(group *gin.RouterGroup) {
 		userGroup.DELETE("/:id", a.DeleteUser)
 		userGroup.POST("/login", a.Login)
 
-		userGroup.POST("/bind/code/send", a.CodeSend)
-		userGroup.POST("/bind", a.Bind)
+		userGroup.POST("/bind/email/code_send", a.BindEmailCodeSend)
+		userGroup.POST("/bind", a.BindEmail)
 	}
 }
 
@@ -56,7 +61,7 @@ func (a *UserApi) GetUser(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
-	user, err := a.UserService.GetUser(id)
+	user, err := a.userService.GetUser(id)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		dto.NewJsonResp(ctx).Success()
 		return
@@ -76,7 +81,7 @@ func (a *UserApi) GetUserList(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
-	list, err := a.UserService.GetUserList(page)
+	list, err := a.userService.GetUserList(page)
 	if err != nil {
 		slog.Error("get user list err:", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.UserGetFailed)
@@ -102,7 +107,7 @@ func (a *UserApi) AddUser(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.UserPasswordComplexRequire)
 		return
 	}
-	user, err := a.UserService.AddUser(req)
+	user, err := a.userService.AddUser(req)
 	switch err {
 	case nil:
 		dto.NewJsonResp(ctx).Success(map[string]int{"id": user.Id})
@@ -133,7 +138,7 @@ func (a *UserApi) DeleteUser(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
-	if err := a.UserService.DeleteUser(id); err != nil {
+	if err := a.userService.DeleteUser(id); err != nil {
 		slog.Error("delete user err:", "err", err)
 		// TODO 这里需要区分是查询不到ID还是删除异常了，如果是查询不到ID则直接返回success
 		dto.NewJsonResp(ctx).Fail(dto.UserDeleteFailed)
@@ -151,12 +156,12 @@ func (a *UserApi) UpdateUser(ctx *gin.Context) {
 	}
 
 	// 若用户不存在也直接提示更新成功
-	/*	if _, err := a.UserService.GetUser(req.Id); err != nil {
+	/*	if _, err := a.userService.GetUser(req.Id); err != nil {
 		dto.NewJsonResp(ctx).Fail(dto.UserNotExist)
 		return
 	}*/
 
-	if err := a.UserService.UpdateUser(req); err != nil {
+	if err := a.userService.UpdateUser(req); err != nil {
 		slog.Error("update user error", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.UserUpdateFailed)
 		return
@@ -177,7 +182,7 @@ func (a *UserApi) Login(ctx *gin.Context) {
 		return
 	}
 
-	domainUser, err := a.UserService.Login(req.Username, req.Password)
+	domainUser, err := a.userService.Login(req.Username, req.Password)
 	switch err {
 	case nil:
 		token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateToken(domainUser)
@@ -198,8 +203,8 @@ func (a *UserApi) Login(ctx *gin.Context) {
 }
 
 // Bind 绑定邮箱
-func (a *UserApi) Bind(ctx *gin.Context) {
-	var req dto.ReqUserBind
+func (a *UserApi) BindEmail(ctx *gin.Context) {
+	var req dto.ReqUserEmailBind
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
@@ -208,8 +213,8 @@ func (a *UserApi) Bind(ctx *gin.Context) {
 }
 
 // CodeSend 验证码发送
-func (a *UserApi) CodeSend(ctx *gin.Context) {
-	var req dto.ReqCodeSend
+func (a *UserApi) BindEmailCodeSend(ctx *gin.Context) {
+	var req dto.ReqUserEmailBind
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
@@ -227,16 +232,23 @@ func (a *UserApi) CodeSend(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
 		return
 	}
-	if _, err = a.UserService.GetUser(uc.Uid); err != nil {
+	if _, err = a.userService.GetUser(uc.Uid); err != nil {
 		slog.Error("get user err", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
 		return
 	}
 
-	if err := a.UserService.UserCodeSend(req); err != nil {
+	if err := a.codeSvc.Send(context.Background(), biz, req.Email); err != nil {
 		slog.Error("code send err", "err", err)
+		switch {
+		case errors.Is(err, cache.ErrCodeVerifyTooMany):
+			dto.NewJsonResp(ctx).FailWithMsg(dto.EmailCodeSendError, err.Error())
+		default:
+			dto.NewJsonResp(ctx).Fail(dto.EmailCodeSendError)
+		}
+		return
 	}
-
+	dto.NewJsonResp(ctx).Success()
 }
 
 // getUserClaim 获取用户的UC信息

@@ -12,6 +12,7 @@ import (
 func main() {
 	var configPath string
 	flag.StringVar(&configPath, "c", "./config/master.yaml", "set yaml file path")
+	flag.Parse()
 
 	// 初始化配置
 	err := config.InitConfig(configPath)

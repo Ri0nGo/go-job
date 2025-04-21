@@ -24,6 +24,6 @@ func (e *EmailCodeRepo) Verify(ctx context.Context, biz, email, code string) (er
 	return e.codeCache.Verify(ctx, biz, email, code)
 }
 
-func NewEmailCodeRepo(codeCache cache.IEmailCodeCache) *EmailCodeRepo {
+func NewEmailCodeRepo(codeCache cache.IEmailCodeCache) IEmailCodeRepo {
 	return &EmailCodeRepo{codeCache}
 }

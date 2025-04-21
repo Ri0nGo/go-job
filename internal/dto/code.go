@@ -35,17 +35,18 @@ const (
 )
 
 const (
-	// 1000 ~ 1009 公共参数错误码
-	ParamsError      = 10000
-	EmailFormatError = 10001
+	// 1000 ~ 1099 公共参数错误码
+	ParamsError        = 1000
+	EmailFormatError   = 1001
+	EmailCodeSendError = 1002
 
-	// 1010 ~ 1019 db 相关错误
+	// 1100 ~ 1199 db 相关错误
 
-	// 10300 ~ 10400 文件相关错误
-	FileNotExist      = 10300
-	UploadFileError   = 10301
-	FileExtNotSupport = 10302
-	FileValidError    = 10303
+	// 1200 ~ 1299 文件相关错误
+	FileNotExist      = 1200
+	UploadFileError   = 1201
+	FileExtNotSupport = 1202
+	FileValidError    = 1203
 )
 
 var (
@@ -90,8 +91,9 @@ var msgMap = map[int]string{
 	UnauthorizedError: "unauthorized",
 
 	// ============= common error code ============= //
-	ParamsError:      "params error",
-	EmailFormatError: "邮箱格式错误",
+	ParamsError:        "params error",
+	EmailFormatError:   "邮箱格式错误",
+	EmailCodeSendError: "验证码发送失败",
 
 	// ============= file ============= //
 	UploadFileError:   "upload file error",

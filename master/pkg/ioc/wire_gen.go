@@ -8,10 +8,12 @@ package ioc
 
 import (
 	"github.com/gin-gonic/gin"
+	"go-job/internal/pkg/email"
 	"go-job/master/api"
 	"go-job/master/database"
 	"go-job/master/pkg/middleware"
 	"go-job/master/repo"
+	"go-job/master/repo/cache"
 	"go-job/master/router"
 	"go-job/master/service"
 	"gorm.io/gorm"
@@ -33,7 +35,12 @@ func InitWebServer() *WebContainer {
 	nodeApi := api.NewNodeApi(iNodeService)
 	iUserRepo := repo.NewUserRepo(db)
 	iUserService := service.NewUserService(iUserRepo)
-	userApi := api.NewUserApi(iUserService)
+	iEmailService := email.InitEmailService()
+	cmdable := database.NewRedisClient()
+	iEmailCodeCache := cache.NewEmailCodeCache(cmdable)
+	iEmailCodeRepo := repo.NewEmailCodeRepo(iEmailCodeCache)
+	iEmailCodeService := service.NewEmailCodeService(iEmailService, iEmailCodeRepo)
+	userApi := api.NewUserApi(iUserService, iEmailCodeService)
 	engine := router.NewWebRouter(v, jobApi, jobRecordApi, nodeApi, userApi)
 	webContainer := &WebContainer{
 		Engine:  engine,

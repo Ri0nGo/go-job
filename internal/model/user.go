@@ -5,12 +5,6 @@ import (
 	"time"
 )
 
-type UserBindType int8
-
-const (
-	UserBindEmail UserBindType = iota + 1
-)
-
 type User struct {
 	Id              int       `json:"id" gorm:"primary_key"`
 	Username        string    `json:"username"`

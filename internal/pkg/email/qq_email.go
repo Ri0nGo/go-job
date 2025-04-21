@@ -25,7 +25,7 @@ func (e *QQEmailService) Send(ctx context.Context, emails []string, subject, con
 	return nil
 }
 
-func NewQQEmailService(key, sender, host string, port int) *QQEmailService {
+func NewQQEmailService(key, sender, host string, port int) IEmailService {
 	return &QQEmailService{
 		key:      key,
 		sender:   sender,

@@ -26,7 +26,7 @@ func getMasterConfigPath() string {
 
 func TestNewQQEmailService(t *testing.T) {
 	testEmails := []string{
-		"*****@qq.com",
+		"920728039@qq.com",
 	}
 	configPath := getMasterConfigPath()
 	config.InitConfig(configPath)

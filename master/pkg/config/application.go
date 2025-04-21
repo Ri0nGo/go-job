@@ -6,6 +6,7 @@ type Application struct {
 	Server Server
 	Data   Data
 	MySQL  MySQL
+	Redis  Redis
 	SMTP   SMTP
 }
 
@@ -29,6 +30,12 @@ type MySQL struct {
 	MaxIdleConn int    `mapstructure:"max_idle_conn"`
 	MaxOpenConn int    `mapstructure:"max_open_conn"`
 	ShowSQL     bool   `mapstructure:"show_sql"`
+}
+
+type Redis struct {
+	Auth string `mapstructure:"auth"`
+	Addr string `mapstructure:"addr"`
+	DB   int    `mapstructure:"db"`
 }
 
 type SMTP struct {

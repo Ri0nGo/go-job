@@ -22,8 +22,7 @@ type IUserService interface {
 	DeleteUser(id int) error
 	UpdateUser(user model.DomainUser) error
 
-	UserBind(req dto.ReqUserBind) (err error)
-	//UserCodeSend(req dto.ReqCodeSend) (err error)
+	UserBind(req dto.ReqUserEmailBind) (err error)
 }
 
 type UserService struct {
@@ -102,8 +101,7 @@ func (s *UserService) Login(username, password string) (model.DomainUser, error)
 	return s.userToDomainUser(user), nil
 }
 
-func (s *UserService) UserBind(req dto.ReqUserBind) (err error) {
-
+func (s *UserService) UserBind(req dto.ReqUserEmailBind) (err error) {
 	return nil
 }
 

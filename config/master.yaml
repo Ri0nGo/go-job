@@ -17,6 +17,11 @@ mysql:
   max_open_conn: 5
   show_sql: true
 
+redis:
+  auth: "123456"
+  addr: "127.0.0.1:6379"
+  db: 0
+  
 smtp:
   sender: "xxx@xx.com"
   key: xxx

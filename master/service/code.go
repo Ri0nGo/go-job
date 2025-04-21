@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go-job/internal/pkg/email"
 	"go-job/master/repo"
+	"log/slog"
 	"math/rand"
 )
 
@@ -16,17 +17,18 @@ type IEmailCodeService interface {
 }
 
 type EmailCodeService struct {
-	emailSvc  email.EmailService
+	emailSvc  email.IEmailService
 	emailRepo repo.IEmailCodeRepo
 }
 
 func (s *EmailCodeService) Send(ctx context.Context, biz, emailStr string) error {
 	code := s.generateCode()
 	if err := s.emailRepo.Set(ctx, biz, emailStr, code); err != nil {
+		slog.Error("email set error", "err", err)
 		return err
 	}
 	tpl := email.GetEmailTpl(email.EmailBindVerfyCodeTpl)
-	return s.emailSvc.Send(ctx, code, tpl.Subject, fmt.Sprintf(tpl.Content, emailStr, code))
+	return s.emailSvc.Send(ctx, []string{emailStr}, tpl.Subject, fmt.Sprintf(tpl.Content, emailStr, code))
 }
 
 func (s *EmailCodeService) generateCode() string {
@@ -37,4 +39,11 @@ func (s *EmailCodeService) generateCode() string {
 func (s *EmailCodeService) Verify(ctx context.Context, biz, email, code string) (err error) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func NewEmailCodeService(emailSvc email.IEmailService, emailRepo repo.IEmailCodeRepo) IEmailCodeService {
+	return &EmailCodeService{
+		emailSvc:  emailSvc,
+		emailRepo: emailRepo,
+	}
 }

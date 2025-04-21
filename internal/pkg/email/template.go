@@ -13,7 +13,7 @@ type EmailTpl struct {
 
 var emailTplMap = map[EmailTplType]EmailTpl{
 	EmailBindVerfyCodeTpl: {
-		Subject: "[go-job]邮箱绑定验证码",
+		Subject: "[go-job]验证码",
 		Content: `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>邮箱验证码</title></head>
 <body style="font-family: Arial, sans-serif; background-color: #fff; padding: 40px;">
 <div style="max-width: 600px; margin: 0 auto; text-align: center;">

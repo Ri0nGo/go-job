@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/spf13/viper"
 	"log"
+	"log/slog"
 )
 
 func InitConfig(filePath string) error {
@@ -10,6 +11,7 @@ func InitConfig(filePath string) error {
 	if err != nil {
 		return err
 	}
+	slog.Info("config info", "detail", setting)
 	App = setting
 	return nil
 }
