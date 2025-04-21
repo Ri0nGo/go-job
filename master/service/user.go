@@ -23,6 +23,7 @@ type IUserService interface {
 	UpdateUser(user model.DomainUser) error
 
 	UserBind(req dto.ReqUserBind) (err error)
+	//UserCodeSend(req dto.ReqCodeSend) (err error)
 }
 
 type UserService struct {

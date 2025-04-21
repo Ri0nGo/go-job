@@ -12,7 +12,7 @@ type Response struct {
 }
 
 const (
-	baseCode   = 1000
+	baseCode   = 10000
 	offsetCode = 100
 )
 
@@ -36,15 +36,16 @@ const (
 
 const (
 	// 1000 ~ 1009 公共参数错误码
-	ParamsError = 1000
+	ParamsError      = 10000
+	EmailFormatError = 10001
 
 	// 1010 ~ 1019 db 相关错误
 
-	// 1030 ~ 1040 文件相关错误
-	FileNotExist      = 1030
-	UploadFileError   = 1031
-	FileExtNotSupport = 1032
-	FileValidError    = 1033
+	// 10300 ~ 10400 文件相关错误
+	FileNotExist      = 10300
+	UploadFileError   = 10301
+	FileExtNotSupport = 10302
+	FileValidError    = 10303
 )
 
 var (
@@ -88,8 +89,9 @@ var msgMap = map[int]string{
 	ServerError:       "server error",
 	UnauthorizedError: "unauthorized",
 
-	// ============= request ============= //
-	ParamsError: "params error",
+	// ============= common error code ============= //
+	ParamsError:      "params error",
+	EmailFormatError: "邮箱格式错误",
 
 	// ============= file ============= //
 	UploadFileError:   "upload file error",

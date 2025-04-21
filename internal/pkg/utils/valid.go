@@ -1,9 +1,14 @@
 package utils
 
 import (
+	"github.com/dlclark/regexp2"
 	"net"
 	"strconv"
 	"strings"
+)
+
+var (
+	emailCompile = regexp2.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`, regexp2.None)
 )
 
 // IsValidIPv4Address 校验IPV4地址是否有效
@@ -32,4 +37,15 @@ func IsValidIPv4Address(addr string) bool {
 	}
 
 	return true
+}
+
+func IsValidEmail(email string) bool {
+	if len(email) == 0 {
+		return false
+	}
+	ok, err := emailCompile.MatchString(email)
+	if err != nil {
+		return false
+	}
+	return ok
 }

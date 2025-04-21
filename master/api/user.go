@@ -7,6 +7,7 @@ import (
 	"go-job/internal/dto"
 	"go-job/internal/model"
 	"go-job/internal/pkg/auth"
+	"go-job/internal/pkg/utils"
 	"go-job/master/pkg/config"
 	"go-job/master/service"
 	"gorm.io/gorm"
@@ -42,6 +43,7 @@ func (a *UserApi) RegisterRoutes(group *gin.RouterGroup) {
 		userGroup.DELETE("/:id", a.DeleteUser)
 		userGroup.POST("/login", a.Login)
 
+		userGroup.POST("/bind/code/send", a.CodeSend)
 		userGroup.POST("/bind", a.Bind)
 	}
 }
@@ -203,4 +205,49 @@ func (a *UserApi) Bind(ctx *gin.Context) {
 		return
 	}
 
+}
+
+// CodeSend 验证码发送
+func (a *UserApi) CodeSend(ctx *gin.Context) {
+	var req dto.ReqCodeSend
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
+		return
+	}
+
+	// 验证邮箱
+	if ok := utils.IsValidEmail(req.Email); !ok {
+		dto.NewJsonResp(ctx).Fail(dto.EmailFormatError)
+		return
+	}
+	// 验证用户是否合法
+	uc, err := a.getUserClaim(ctx)
+	if err != nil {
+		slog.Error("get user claim err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
+		return
+	}
+	if _, err = a.UserService.GetUser(uc.Uid); err != nil {
+		slog.Error("get user err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
+		return
+	}
+
+	if err := a.UserService.UserCodeSend(req); err != nil {
+		slog.Error("code send err", "err", err)
+	}
+
+}
+
+// getUserClaim 获取用户的UC信息
+func (a *UserApi) getUserClaim(ctx *gin.Context) (*model.UserClaims, error) {
+	value, exists := ctx.Get("user")
+	if !exists {
+		return nil, errors.New("user not exists in context")
+	}
+	uc, ok := value.(*model.UserClaims)
+	if !ok {
+		return nil, errors.New("assert user claims failed")
+	}
+	return uc, nil
 }
