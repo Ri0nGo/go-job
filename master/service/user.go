@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"go-job/internal/dto"
 	"go-job/internal/model"
 	"go-job/master/repo"
 	"golang.org/x/crypto/bcrypt"
@@ -22,7 +21,7 @@ type IUserService interface {
 	DeleteUser(id int) error
 	UpdateUser(user model.DomainUser) error
 
-	UserBind(req dto.ReqUserEmailBind) (err error)
+	UserBind(id int, email string) error
 }
 
 type UserService struct {
@@ -30,6 +29,9 @@ type UserService struct {
 }
 
 func (s *UserService) GetUser(id int) (model.DomainUser, error) {
+	if id <= 0 {
+		return model.DomainUser{}, errors.New("user id is zero")
+	}
 	userDao, err := s.UserRepo.QueryById(id)
 	if err != nil {
 		return model.DomainUser{}, err
@@ -42,6 +44,7 @@ func (s *UserService) userToDomainUser(user model.User) model.DomainUser {
 		Id:          user.Id,
 		Username:    user.Username,
 		Nickname:    user.Nickname,
+		Email:       user.Email,
 		CreatedTime: user.CreatedTime,
 		About:       user.About,
 	}
@@ -101,8 +104,8 @@ func (s *UserService) Login(username, password string) (model.DomainUser, error)
 	return s.userToDomainUser(user), nil
 }
 
-func (s *UserService) UserBind(req dto.ReqUserEmailBind) (err error) {
-	return nil
+func (s *UserService) UserBind(id int, email string) error {
+	return s.UserRepo.Update(model.User{Id: id, Email: email})
 }
 
 func NewUserService(userRepo repo.IUserRepo) IUserService {

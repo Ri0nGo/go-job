@@ -40,7 +40,7 @@ func IsValidIPv4Address(addr string) bool {
 }
 
 func IsValidEmail(email string) bool {
-	if len(email) == 0 {
+	if len(email) == 0 || len(email) > 255 {
 		return false
 	}
 	ok, err := emailCompile.MatchString(email)

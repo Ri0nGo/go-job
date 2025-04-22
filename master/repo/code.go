@@ -9,7 +9,7 @@ import (
 // @Description: 解耦处理，后续可以支持注入其他的验证码存储方式，比如Memcached等
 type IEmailCodeRepo interface {
 	Set(ctx context.Context, biz, email, code string) error
-	Verify(ctx context.Context, biz, email, code string) (err error)
+	Verify(ctx context.Context, biz, email, code string) error
 }
 
 type EmailCodeRepo struct {
@@ -20,7 +20,7 @@ func (e *EmailCodeRepo) Set(ctx context.Context, biz, email, code string) error 
 	return e.codeCache.Set(ctx, biz, email, code)
 }
 
-func (e *EmailCodeRepo) Verify(ctx context.Context, biz, email, code string) (err error) {
+func (e *EmailCodeRepo) Verify(ctx context.Context, biz, email, code string) error {
 	return e.codeCache.Verify(ctx, biz, email, code)
 }
 

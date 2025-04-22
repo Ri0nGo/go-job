@@ -13,7 +13,7 @@ import (
 // @Description: 邮箱验证码服务
 type IEmailCodeService interface {
 	Send(ctx context.Context, biz, email string) error
-	Verify(ctx context.Context, biz, email, code string) (err error)
+	Verify(ctx context.Context, biz, email, code string) error
 }
 
 type EmailCodeService struct {
@@ -36,9 +36,8 @@ func (s *EmailCodeService) generateCode() string {
 	return fmt.Sprintf("%06d", code)
 }
 
-func (s *EmailCodeService) Verify(ctx context.Context, biz, email, code string) (err error) {
-	//TODO implement me
-	panic("implement me")
+func (s *EmailCodeService) Verify(ctx context.Context, biz, email, code string) error {
+	return s.emailRepo.Verify(ctx, biz, email, code)
 }
 
 func NewEmailCodeService(emailSvc email.IEmailService, emailRepo repo.IEmailCodeRepo) IEmailCodeService {

@@ -36,9 +36,10 @@ const (
 
 const (
 	// 1000 ~ 1099 公共参数错误码
-	ParamsError        = 1000
-	EmailFormatError   = 1001
-	EmailCodeSendError = 1002
+	ParamsError          = 1000
+	EmailFormatError     = 1001
+	EmailCodeSendError   = 1002
+	EmailCodeVerifyError = 1003
 
 	// 1100 ~ 1199 db 相关错误
 
@@ -60,6 +61,7 @@ var (
 	UsernameExist              = genCodeMsg(userModule, 7, "用户名已存在")
 	UserPasswordNotMatch       = genCodeMsg(userModule, 8, "两次密码不一致")
 	UserLoginErr               = genCodeMsg(userModule, 9, "用户登录失败")
+	UserEmailBindErr           = genCodeMsg(userModule, 10, "邮箱绑定失败")
 )
 
 var (
@@ -91,9 +93,10 @@ var msgMap = map[int]string{
 	UnauthorizedError: "unauthorized",
 
 	// ============= common error code ============= //
-	ParamsError:        "params error",
-	EmailFormatError:   "邮箱格式错误",
-	EmailCodeSendError: "验证码发送失败",
+	ParamsError:          "params error",
+	EmailFormatError:     "邮箱格式错误",
+	EmailCodeSendError:   "验证码发送失败",
+	EmailCodeVerifyError: "验证码错误",
 
 	// ============= file ============= //
 	UploadFileError:   "upload file error",

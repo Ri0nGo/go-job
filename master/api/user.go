@@ -49,7 +49,7 @@ func (a *UserApi) RegisterRoutes(group *gin.RouterGroup) {
 		userGroup.POST("/login", a.Login)
 
 		userGroup.POST("/bind/email/code_send", a.BindEmailCodeSend)
-		userGroup.POST("/bind", a.BindEmail)
+		userGroup.POST("/bind/email", a.BindEmail)
 	}
 }
 
@@ -192,7 +192,9 @@ func (a *UserApi) Login(ctx *gin.Context) {
 			return
 		}
 		ctx.Header("Authorization", token)
-		dto.NewJsonResp(ctx).Success()
+		dto.NewJsonResp(ctx).Success(map[string]int{
+			"id": domainUser.Id,
+		})
 		return
 	case service.ErrInvalidUserOrPassword:
 		dto.NewJsonResp(ctx).Fail(dto.UsernameOrPasswordError)
@@ -209,7 +211,41 @@ func (a *UserApi) BindEmail(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
-
+	// 验证邮箱
+	if ok := utils.IsValidEmail(req.Email); !ok {
+		dto.NewJsonResp(ctx).Fail(dto.EmailFormatError)
+		return
+	}
+	// 验证用户是否合法
+	uc, err := a.getUserClaim(ctx)
+	if err != nil {
+		slog.Error("get user claim err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
+		return
+	}
+	if _, err = a.userService.GetUser(uc.Uid); err != nil {
+		slog.Error("get user err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
+		return
+	}
+	if err := a.codeSvc.Verify(ctx, biz, req.Email, req.Code); err != nil {
+		slog.Error("verify email bind err", "err", err)
+		switch err {
+		case cache.ErrInputCodeInvalid:
+			dto.NewJsonResp(ctx).FailWithMsg(dto.EmailCodeVerifyError, err.Error())
+		case cache.ErrCodeVerifyTooMany:
+			dto.NewJsonResp(ctx).FailWithMsg(dto.EmailCodeVerifyError, err.Error())
+		default:
+			dto.NewJsonResp(ctx).Fail(dto.EmailCodeVerifyError)
+		}
+		return
+	}
+	if err = a.userService.UserBind(uc.Uid, req.Email); err != nil {
+		slog.Error("bind user email err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UserEmailBindErr)
+		return
+	}
+	dto.NewJsonResp(ctx).Success()
 }
 
 // CodeSend 验证码发送
@@ -241,7 +277,7 @@ func (a *UserApi) BindEmailCodeSend(ctx *gin.Context) {
 	if err := a.codeSvc.Send(context.Background(), biz, req.Email); err != nil {
 		slog.Error("code send err", "err", err)
 		switch {
-		case errors.Is(err, cache.ErrCodeVerifyTooMany):
+		case errors.Is(err, cache.ErrCodeSendTooMany):
 			dto.NewJsonResp(ctx).FailWithMsg(dto.EmailCodeSendError, err.Error())
 		default:
 			dto.NewJsonResp(ctx).Fail(dto.EmailCodeSendError)
