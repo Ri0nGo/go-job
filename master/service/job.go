@@ -12,6 +12,7 @@ import (
 	"go-job/internal/pkg/utils"
 	"go-job/internal/upload"
 	"go-job/master/pkg/config"
+	"go-job/master/pkg/notify"
 	"go-job/master/repo"
 	"log/slog"
 	"os"
@@ -35,8 +36,9 @@ type IJobService interface {
 }
 
 type JobService struct {
-	JobRepo  repo.IJobRepo
-	NodeRepo repo.INodeRepo
+	JobRepo     repo.IJobRepo
+	NodeRepo    repo.INodeRepo
+	notifyStore notify.INotifyStore
 }
 
 func (j *JobService) GetJob(id int) (model.Job, error) {
@@ -127,7 +129,20 @@ func (j *JobService) AddJob(job model.Job) error {
 	// 清除缓存中的文件
 	upload.DeleteFileMeta(job.FileKey)
 
+	if job.NotifyStatus == model.NotifyStatusEnabled {
+		j.notifyStore.Set(context.Background(), job.Id, j.GenNotifyConfig(job))
+	}
+
 	return nil
+}
+
+func (j *JobService) GenNotifyConfig(job model.Job) notify.NotifyConfig {
+	return notify.NotifyConfig{
+		JobID:          job.Id,
+		NotifyStrategy: job.NotifyStrategy,
+		NotifyType:     job.NotifyType,
+	}
+
 }
 
 func (j *JobService) sendDataToNode(job model.Job, node model.Node) error {
@@ -286,10 +301,19 @@ func (j *JobService) DeleteJob(id int) error {
 	if err != nil {
 		return err
 	}
+
 	if err = j.removeJobInNode(node, id); err != nil {
 		return err
 	}
-	return j.JobRepo.Delete(id)
+	err = j.JobRepo.Delete(id)
+	if err != nil {
+		return err
+	}
+
+	if job.NotifyStatus == model.NotifyStatusEnabled {
+		j.notifyStore.Delete(context.Background(), job.Id)
+	}
+	return nil
 }
 
 func (j *JobService) UpdateJob(job model.Job) error {
@@ -346,12 +370,20 @@ func (j *JobService) UpdateJob(job model.Job) error {
 		}
 		return ErrSyncExecFileToNode
 	}
+
+	if dbJob.NotifyStatus == model.NotifyStatusEnabled {
+		j.notifyStore.Delete(context.Background(), job.Id)
+	}
+	if job.NotifyStatus == model.NotifyStatusEnabled {
+		j.notifyStore.Set(context.Background(), job.Id, j.GenNotifyConfig(job))
+	}
 	return nil
 }
 
-func NewJobService(jobRepo repo.IJobRepo, nodeRepo repo.INodeRepo) IJobService {
+func NewJobService(jobRepo repo.IJobRepo, nodeRepo repo.INodeRepo, notify notify.INotifyStore) IJobService {
 	return &JobService{
-		JobRepo:  jobRepo,
-		NodeRepo: nodeRepo,
+		JobRepo:     jobRepo,
+		NodeRepo:    nodeRepo,
+		notifyStore: notify,
 	}
 }

@@ -3,6 +3,7 @@ package service
 import (
 	"go-job/internal/model"
 	"go-job/internal/pkg/utils"
+	"go-job/master/pkg/notify"
 	"go-job/master/repo"
 )
 
@@ -15,6 +16,7 @@ type IJobRecordService interface {
 
 type JobRecordService struct {
 	JobRecordRepo repo.IJobRecordRepo
+	notifyStore   notify.INotifyStore
 }
 
 func (s *JobRecordService) GetJobRecord(id int) (model.JobRecord, error) {
@@ -43,8 +45,9 @@ func (s *JobRecordService) DeleteJobRecord(id int) error {
 	return s.JobRecordRepo.Delete(id)
 }
 
-func NewJobRecordService(nodeRepo repo.IJobRecordRepo) IJobRecordService {
+func NewJobRecordService(nodeRepo repo.IJobRecordRepo, notify notify.INotifyStore) IJobRecordService {
 	return &JobRecordService{
 		JobRecordRepo: nodeRepo,
+		notifyStore:   notify,
 	}
 }
