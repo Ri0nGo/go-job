@@ -2,10 +2,12 @@ package notify
 
 import (
 	"context"
+	"fmt"
 	"go-job/internal/model"
 	"go-job/internal/pkg/email"
 	"log/slog"
 	"sync"
+	"time"
 )
 
 var (
@@ -97,10 +99,19 @@ func (m *MemoryNotifyStore) needNotify(unit NotifyUnit) bool {
 func (m *MemoryNotifyStore) dispatch(unit NotifyUnit) error {
 	switch unit.NotifyType {
 	case model.NotifyTypeEmail:
-		return m.emailSvc.Send(context.Background(), []string{unit.Email}, "任务执行主题", "执行内容")
+		tpl := email.GetEmailTpl(email.EmailJobNotifyTpl)
+		subject := fmt.Sprintf(tpl.Subject, unit.Name)
+		content := fmt.Sprintf(tpl.Content, unit.Name, unit.Status.String(),
+			unit.StartExecTime.Format(time.DateTime), unit.Duration,
+			unit.Output, unit.Error)
+		return m.emailSvc.Send(context.Background(), []string{unit.NotifyMark}, subject, content)
 	default:
 		return nil
 	}
+}
+
+func (m *MemoryNotifyStore) generateSubject(name, status string) string {
+	return fmt.Sprintf("任务: %s, 状态: %s", name, status)
 }
 
 func newMemoryNotifyStore(workerNum int, emailSvc email.IEmailService) INotifyStore {
@@ -116,7 +127,6 @@ func InitMemoryNotifyStore(emailSvc email.IEmailService) INotifyStore {
 	onceMemory.Do(func() {
 		if emailSvc == nil {
 			slog.Error("emailSvc is nil")
-			return
 		}
 		// TODO 这里可以通过配置文件来设置worker数量
 		memoryNotifyStore = newMemoryNotifyStore(defaultWorkerNumber, emailSvc)

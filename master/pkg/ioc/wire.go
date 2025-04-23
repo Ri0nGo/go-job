@@ -10,6 +10,7 @@ import (
 	"go-job/master/api"
 	"go-job/master/database"
 	"go-job/master/pkg/middleware"
+	"go-job/master/pkg/notify"
 	"go-job/master/repo"
 	"go-job/master/repo/cache"
 	"go-job/master/router"
@@ -18,9 +19,10 @@ import (
 )
 
 type WebContainer struct {
-	Engine  *gin.Engine
-	MysqlDB *gorm.DB
-	JobSvc  service.IJobService
+	Engine      *gin.Engine
+	MysqlDB     *gorm.DB
+	JobSvc      service.IJobService
+	NotifyStore notify.INotifyStore
 }
 
 func InitWebServer() *WebContainer {
@@ -38,10 +40,11 @@ func InitWebServer() *WebContainer {
 		repo.NewEmailCodeRepo,
 
 		// service
+		email.InitEmailService,
+		notify.InitMemoryNotifyStore,
 		service.NewJobService,
 		service.NewJobRecordService,
 		service.NewNodeService,
-		email.InitEmailService,
 		service.NewEmailCodeService,
 		service.NewUserService,
 

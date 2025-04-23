@@ -9,6 +9,8 @@ CREATE TABLE `job` (
     `notify_status` tinyint(1) DEFAULT '2' COMMENT '通知状态 1启用；2停用',
     `notify_type` smallint DEFAULT NULL COMMENT '通知方式 1邮件',
     `notify_strategy` smallint DEFAULT NULL COMMENT '通知策略 1成功后通知；2失败后通知；3总是通知',
+    `notify_mark` varchar(255) DEFAULT NULL COMMENT '通知方式的具体内存，如邮箱地址',
+    `user_id` int NOT NULL COMMENT '用户id',
     `internal` json DEFAULT NULL,
     `created_time` datetime DEFAULT NULL,
     `updated_time` datetime DEFAULT NULL,

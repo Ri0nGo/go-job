@@ -20,11 +20,13 @@ import (
 
 type JobApi struct {
 	JobService service.IJobService
+	userSvc    service.IUserService
 }
 
-func NewJobApi(jobService service.IJobService) *JobApi {
+func NewJobApi(jobService service.IJobService, userSvc service.IUserService) *JobApi {
 	return &JobApi{
 		JobService: jobService,
+		userSvc:    userSvc,
 	}
 }
 
@@ -47,7 +49,14 @@ func (a *JobApi) GetJob(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
-	job, err := a.JobService.GetJob(id)
+	uc, err := GetUserClaim(ctx)
+	if err != nil {
+		slog.Error("get user claim err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
+		return
+	}
+
+	job, err := a.JobService.GetJob(uc.Uid, id)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		dto.NewJsonResp(ctx).Success()
 		return
@@ -66,7 +75,14 @@ func (a *JobApi) GetJobList(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
-	list, err := a.JobService.GetJobList(page)
+	uc, err := GetUserClaim(ctx)
+	if err != nil {
+		slog.Error("get user claim err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
+		return
+	}
+
+	list, err := a.JobService.GetJobList(uc.Uid, page)
 	if err != nil {
 		slog.Error("get job list err:", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.JobGetFailed)
@@ -78,9 +94,17 @@ func (a *JobApi) GetJobList(ctx *gin.Context) {
 func (a *JobApi) AddJob(ctx *gin.Context) {
 	var req model.Job
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		slog.Error("add job param err", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
+	uc, err := GetUserClaim(ctx)
+	if err != nil {
+		slog.Error("get user claim err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
+		return
+	}
+	req.UserId = uc.Uid
 
 	if err := a.JobService.AddJob(req); err != nil {
 		slog.Error("add job error", "err", err)
@@ -102,7 +126,14 @@ func (a *JobApi) DeleteJob(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
-	if err := a.JobService.DeleteJob(id); err != nil {
+	uc, err := GetUserClaim(ctx)
+	if err != nil {
+		slog.Error("get user claim err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
+		return
+	}
+
+	if err := a.JobService.DeleteJob(uc.Uid, id); err != nil {
 		slog.Error("delete job err:", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.JobDeleteFailed)
 		return
@@ -117,6 +148,13 @@ func (a *JobApi) UpdateJob(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
+	uc, err := GetUserClaim(ctx)
+	if err != nil {
+		slog.Error("get user claim err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
+		return
+	}
+	req.UserId = uc.Uid
 
 	if err := a.JobService.UpdateJob(req); err != nil {
 		slog.Error("update job err:", "err", err)

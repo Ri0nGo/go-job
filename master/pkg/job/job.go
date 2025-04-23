@@ -1,13 +1,16 @@
 package job
 
 import (
+	"context"
 	"go-job/internal/model"
+	"go-job/master/pkg/notify"
 	"go-job/master/service"
 	"gorm.io/gorm"
 	"log/slog"
 )
 
-func InitJobDataToNode(mysqlDB *gorm.DB, jobSvc service.IJobService) error {
+func InitJobDataToNode(mysqlDB *gorm.DB, jobSvc service.IJobService,
+	notifyStore notify.INotifyStore) error {
 	// 查询所有的job
 	jobs, err := queryAllJobs(mysqlDB)
 	if err != nil {
@@ -18,15 +21,19 @@ func InitJobDataToNode(mysqlDB *gorm.DB, jobSvc service.IJobService) error {
 	if err != nil {
 		panic(err)
 	}
-
-	// 发送job到node
+	
 	for _, job := range jobs {
-		//fmt.Println("send job to node info", job.Id, job.Name, job.CronExpr)
+		// 发送job到node
 		node := nodeM[job.NodeID]
 		err := jobSvc.SendJobToNode(job, node, service.SendJobByCreate)
 		if err != nil {
 			slog.Error("init job to node error", "job name",
 				job.Name, "job id", job.Id, "err", err)
+		}
+
+		// 初始化任务通知数据
+		if job.NotifyStatus == model.NotifyStatusEnabled {
+			notifyStore.Set(context.Background(), job.Id, service.GenNotifyConfig(job))
 		}
 	}
 	return nil

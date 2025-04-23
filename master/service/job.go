@@ -27,10 +27,10 @@ const (
 )
 
 type IJobService interface {
-	GetJob(id int) (model.Job, error)
-	GetJobList(page model.Page) (model.Page, error)
+	GetJob(uid, id int) (model.Job, error)
+	GetJobList(uid int, page model.Page) (model.Page, error)
 	AddJob(job model.Job) error
-	DeleteJob(id int) error
+	DeleteJob(uid, id int) error
 	UpdateJob(job model.Job) error
 	SendJobToNode(job model.Job, node model.Node, operation jobOperation) error
 }
@@ -39,13 +39,25 @@ type JobService struct {
 	JobRepo     repo.IJobRepo
 	NodeRepo    repo.INodeRepo
 	notifyStore notify.INotifyStore
+	userRepo    repo.IUserRepo
 }
 
-func (j *JobService) GetJob(id int) (model.Job, error) {
-	return j.JobRepo.QueryById(id)
+func (j *JobService) GetJob(uid, id int) (model.Job, error) {
+	job, err := j.JobRepo.QueryById(id)
+	if err != nil {
+		return model.Job{}, err
+	}
+	job.HasPermission = j.hasPermission(uid, &job)
+	return job, nil
 }
 
-func (j *JobService) GetJobList(page model.Page) (model.Page, error) {
+// hasPermission 用户是否有操作权限，因为当前系统还没有权限管理
+// 仅通过 “谁创建的，谁就能操作” 来判断
+func (j *JobService) hasPermission(uid int, job *model.Job) bool {
+	return uid == job.UserId
+}
+
+func (j *JobService) GetJobList(uid int, page model.Page) (model.Page, error) {
 	// 查询jobs
 	p, err := j.JobRepo.QueryList(page)
 	if err != nil {
@@ -78,15 +90,16 @@ func (j *JobService) GetJobList(page model.Page) (model.Page, error) {
 	for _, v := range jobs {
 		nodeIds = append(nodeIds, v.NodeID)
 		data = append(data, dto.RespJob{
-			Id:          v.Id,
-			Name:        v.Name,
-			ExecType:    v.ExecType,
-			CronExpr:    v.CronExpr,
-			Active:      v.Active,
-			NodeID:      v.NodeID,
-			NodeName:    nodeMap[v.NodeID],
-			FileName:    v.Internal.FileMeta.Filename,
-			CreatedTime: v.CreatedTime,
+			Id:            v.Id,
+			Name:          v.Name,
+			ExecType:      v.ExecType,
+			CronExpr:      v.CronExpr,
+			Active:        v.Active,
+			NodeID:        v.NodeID,
+			NodeName:      nodeMap[v.NodeID],
+			FileName:      v.Internal.FileMeta.Filename,
+			CreatedTime:   v.CreatedTime,
+			HasPermission: j.hasPermission(uid, &v),
 		})
 	}
 	p.Data = data
@@ -108,6 +121,13 @@ func (j *JobService) AddJob(job model.Job) error {
 		return ErrNodeNotExists
 	}
 
+	user, err := j.userRepo.QueryById(job.UserId)
+	if err != nil {
+		return err
+	}
+	if job.NotifyType == model.NotifyTypeEmail && job.NotifyMark != user.Email {
+		return errors.New("请填写当前用户的邮箱")
+	}
 	// 将数据插入数据库
 	err = j.JobRepo.Insert(&job)
 	if err != nil {
@@ -130,19 +150,20 @@ func (j *JobService) AddJob(job model.Job) error {
 	upload.DeleteFileMeta(job.FileKey)
 
 	if job.NotifyStatus == model.NotifyStatusEnabled {
-		j.notifyStore.Set(context.Background(), job.Id, j.GenNotifyConfig(job))
+		j.notifyStore.Set(context.Background(), job.Id, GenNotifyConfig(job))
 	}
 
 	return nil
 }
 
-func (j *JobService) GenNotifyConfig(job model.Job) notify.NotifyConfig {
+func GenNotifyConfig(job model.Job) notify.NotifyConfig {
 	return notify.NotifyConfig{
 		JobID:          job.Id,
+		Name:           job.Name,
 		NotifyStrategy: job.NotifyStrategy,
 		NotifyType:     job.NotifyType,
+		NotifyMark:     job.NotifyMark,
 	}
-
 }
 
 func (j *JobService) sendDataToNode(job model.Job, node model.Node) error {
@@ -292,10 +313,13 @@ func (j *JobService) parseCrontab(cronExpr string) error {
 	return err
 }
 
-func (j *JobService) DeleteJob(id int) error {
+func (j *JobService) DeleteJob(uid, id int) error {
 	job, err := j.JobRepo.QueryById(id)
 	if err != nil {
 		return err
+	}
+	if job.UserId != uid {
+		return ErrUserNotPermission
 	}
 	node, err := j.NodeRepo.QueryById(job.NodeID)
 	if err != nil {
@@ -322,9 +346,12 @@ func (j *JobService) UpdateJob(job model.Job) error {
 		return ErrCronExprParse
 	}
 
-	dbJob, err := j.GetJob(job.Id)
+	dbJob, err := j.GetJob(job.UserId, job.Id)
 	if err != nil {
 		return err
+	}
+	if dbJob.UserId != job.UserId {
+		return ErrUserNotPermission
 	}
 	node, err := j.NodeRepo.QueryById(job.NodeID)
 	if err != nil {
@@ -375,15 +402,17 @@ func (j *JobService) UpdateJob(job model.Job) error {
 		j.notifyStore.Delete(context.Background(), job.Id)
 	}
 	if job.NotifyStatus == model.NotifyStatusEnabled {
-		j.notifyStore.Set(context.Background(), job.Id, j.GenNotifyConfig(job))
+		j.notifyStore.Set(context.Background(), job.Id, GenNotifyConfig(job))
 	}
 	return nil
 }
 
-func NewJobService(jobRepo repo.IJobRepo, nodeRepo repo.INodeRepo, notify notify.INotifyStore) IJobService {
+func NewJobService(jobRepo repo.IJobRepo, nodeRepo repo.INodeRepo,
+	userRepo repo.IUserRepo, notify notify.INotifyStore) IJobService {
 	return &JobService{
 		JobRepo:     jobRepo,
 		NodeRepo:    nodeRepo,
+		userRepo:    userRepo,
 		notifyStore: notify,
 	}
 }

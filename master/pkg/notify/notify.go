@@ -3,6 +3,7 @@ package notify
 import (
 	"context"
 	"go-job/internal/model"
+	"time"
 )
 
 type NotifyConfig struct {
@@ -10,6 +11,7 @@ type NotifyConfig struct {
 	Name           string
 	NotifyStrategy model.NotifyStrategy
 	NotifyType     model.NotifyType
+	NotifyMark     string
 }
 
 type INotifyStore interface {
@@ -22,10 +24,9 @@ type INotifyStore interface {
 
 type NotifyUnit struct {
 	NotifyConfig
-	Status   model.JobStatus // 执行状态
-	Duration float64         // 耗时
-	Output   string
-	Error    string
-
-	Email string // 邮箱
+	Status        model.JobStatus // 执行状态
+	StartExecTime time.Time
+	Duration      float64 // 耗时
+	Output        string
+	Error         string
 }

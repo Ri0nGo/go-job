@@ -31,7 +31,7 @@ func RunApp() {
 }
 
 func bootstrap(c *ioc.WebContainer) {
-	err := job.InitJobDataToNode(c.MysqlDB, c.JobSvc)
+	err := job.InitJobDataToNode(c.MysqlDB, c.JobSvc, c.NotifyStore)
 	if err != nil {
 		slog.Error("init job data to node error", "err", err)
 	}

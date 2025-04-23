@@ -12,6 +12,7 @@ import (
 	"go-job/master/api"
 	"go-job/master/database"
 	"go-job/master/pkg/middleware"
+	"go-job/master/pkg/notify"
 	"go-job/master/repo"
 	"go-job/master/repo/cache"
 	"go-job/master/router"
@@ -26,16 +27,17 @@ func InitWebServer() *WebContainer {
 	db := database.NewMySQLWithGORM()
 	iJobRepo := repo.NewJobRepo(db)
 	iNodeRepo := repo.NewNodeRepo(db)
-	iJobService := service.NewJobService(iJobRepo, iNodeRepo)
-	jobApi := api.NewJobApi(iJobService)
+	iUserRepo := repo.NewUserRepo(db)
+	iEmailService := email.InitEmailService()
+	iNotifyStore := notify.InitMemoryNotifyStore(iEmailService)
+	iJobService := service.NewJobService(iJobRepo, iNodeRepo, iUserRepo, iNotifyStore)
+	iUserService := service.NewUserService(iUserRepo)
+	jobApi := api.NewJobApi(iJobService, iUserService)
 	iJobRecordRepo := repo.NewJobRecordRepo(db)
-	iJobRecordService := service.NewJobRecordService(iJobRecordRepo)
+	iJobRecordService := service.NewJobRecordService(iJobRecordRepo, iNotifyStore)
 	jobRecordApi := api.NewJobRecordApi(iJobRecordService)
 	iNodeService := service.NewNodeService(iNodeRepo, iJobRepo)
 	nodeApi := api.NewNodeApi(iNodeService)
-	iUserRepo := repo.NewUserRepo(db)
-	iUserService := service.NewUserService(iUserRepo)
-	iEmailService := email.InitEmailService()
 	cmdable := database.NewRedisClient()
 	iEmailCodeCache := cache.NewEmailCodeCache(cmdable)
 	iEmailCodeRepo := repo.NewEmailCodeRepo(iEmailCodeCache)
@@ -43,9 +45,10 @@ func InitWebServer() *WebContainer {
 	userApi := api.NewUserApi(iUserService, iEmailCodeService)
 	engine := router.NewWebRouter(v, jobApi, jobRecordApi, nodeApi, userApi)
 	webContainer := &WebContainer{
-		Engine:  engine,
-		MysqlDB: db,
-		JobSvc:  iJobService,
+		Engine:      engine,
+		MysqlDB:     db,
+		JobSvc:      iJobService,
+		NotifyStore: iNotifyStore,
 	}
 	return webContainer
 }
@@ -53,7 +56,8 @@ func InitWebServer() *WebContainer {
 // wire.go:
 
 type WebContainer struct {
-	Engine  *gin.Engine
-	MysqlDB *gorm.DB
-	JobSvc  service.IJobService
+	Engine      *gin.Engine
+	MysqlDB     *gorm.DB
+	JobSvc      service.IJobService
+	NotifyStore notify.INotifyStore
 }

@@ -1,10 +1,12 @@
 package service
 
 import (
+	"context"
 	"go-job/internal/model"
 	"go-job/internal/pkg/utils"
 	"go-job/master/pkg/notify"
 	"go-job/master/repo"
+	"time"
 )
 
 type IJobRecordService interface {
@@ -38,7 +40,30 @@ func (s *JobRecordService) AddJobRecord(req model.CallbackJobResult) error {
 		Output:       req.Output,
 		Error:        req.Error,
 	}
-	return s.JobRecordRepo.Insert(&jobRecord)
+	if err := s.JobRecordRepo.Insert(&jobRecord); err != nil {
+		return err
+	}
+	if nc, ok := s.notifyStore.Get(context.Background(), req.JobID); ok {
+		s.notifyStore.PushNotifyUnit(context.Background(), req.JobID, s.jobToNotifyUnit(req, nc))
+	}
+	return nil
+}
+
+func (s *JobRecordService) jobToNotifyUnit(req model.CallbackJobResult, nc notify.NotifyConfig) notify.NotifyUnit {
+	return notify.NotifyUnit{
+		NotifyConfig: notify.NotifyConfig{
+			JobID:          nc.JobID,
+			Name:           nc.Name,
+			NotifyStrategy: nc.NotifyStrategy,
+			NotifyType:     nc.NotifyType,
+			NotifyMark:     nc.NotifyMark,
+		},
+		StartExecTime: time.Unix(req.StartTime, 0).Local(),
+		Status:        req.Status,
+		Duration:      req.Duration,
+		Output:        req.Output,
+		Error:         req.Error,
+	}
 }
 
 func (s *JobRecordService) DeleteJobRecord(id int) error {

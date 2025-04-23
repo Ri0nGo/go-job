@@ -18,13 +18,13 @@ const (
 func (s JobStatus) String() string {
 	switch s {
 	case Pending:
-		return "pending"
+		return "等待中"
 	case Running:
-		return "running"
+		return "运行中"
 	case Success:
-		return "success"
+		return "成功"
 	case Failed:
-		return "failed"
+		return "失败"
 	default:
 		return strconv.Itoa(int(s))
 	}
@@ -50,8 +50,11 @@ type Job struct {
 	NotifyStatus   NotifyStatus   `json:"notify_status" gorm:"column:notify_status;default:1"` // 通知启停
 	NotifyType     NotifyType     `json:"notify_type" gorm:"column:notify_type"`               // 通知类型，邮件，短信等
 	NotifyStrategy NotifyStrategy `json:"notify_strategy" gorm:"column:notify_strategy"`       // 通知策略
-	FileName       string         `json:"filename" gorm:"-"`                                   // 文件名
-	FileKey        string         `json:"file_key" gorm:"-"`                                   // 文件key
+	NotifyMark     string         `json:"notify_mark" gorm:"column:notify_mark"`               // 通知方式的具体内容，可能是邮箱地址，可能是外链。
+	UserId         int            `json:"user_id" gorm:"column:user_id"`
+	HasPermission  bool           `json:"has_permission" gorm:"-"`
+	FileName       string         `json:"filename" gorm:"-"` // 文件名
+	FileKey        string         `json:"file_key" gorm:"-"` // 文件key
 }
 
 func (Job) TableName() string {

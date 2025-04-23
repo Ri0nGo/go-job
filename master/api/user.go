@@ -217,7 +217,7 @@ func (a *UserApi) BindEmail(ctx *gin.Context) {
 		return
 	}
 	// 验证用户是否合法
-	uc, err := a.getUserClaim(ctx)
+	uc, err := GetUserClaim(ctx)
 	if err != nil {
 		slog.Error("get user claim err", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
@@ -262,12 +262,13 @@ func (a *UserApi) BindEmailCodeSend(ctx *gin.Context) {
 		return
 	}
 	// 验证用户是否合法
-	uc, err := a.getUserClaim(ctx)
+	uc, err := GetUserClaim(ctx)
 	if err != nil {
 		slog.Error("get user claim err", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
 		return
 	}
+	// TODO 再次通过数据库查询用户是否有必要？
 	if _, err = a.userService.GetUser(uc.Uid); err != nil {
 		slog.Error("get user err", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
@@ -287,8 +288,8 @@ func (a *UserApi) BindEmailCodeSend(ctx *gin.Context) {
 	dto.NewJsonResp(ctx).Success()
 }
 
-// getUserClaim 获取用户的UC信息
-func (a *UserApi) getUserClaim(ctx *gin.Context) (*model.UserClaims, error) {
+// GetUserClaim 获取用户的UC信息
+func GetUserClaim(ctx *gin.Context) (*model.UserClaims, error) {
 	value, exists := ctx.Get("user")
 	if !exists {
 		return nil, errors.New("user not exists in context")
