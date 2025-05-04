@@ -41,7 +41,7 @@ func (j *JobRecordRepo) Delete(id int) error {
 
 func (j *JobRecordRepo) QueryList(page model.Page, jobId int) (model.Page, error) {
 	// TODO 这里后面还需要优化查询方式，感觉还需要对分页查询做封装
-	return paginate.PaginateListV2[model.JobRecordSummary](j.mysqlDB, page.PageNum, page.PageSize, func(db *gorm.DB) *gorm.DB {
+	return paginate.PaginateListV2[model.JobRecordSummary](j.mysqlDB, page, func(db *gorm.DB) *gorm.DB {
 		return db.Where("job_id = ?", jobId).Order("id desc")
 	})
 }

@@ -5,7 +5,7 @@ import (
 	"go-job/internal/model"
 )
 
-type ExecutorFactory func(req dto.ReqJob) IExecutor
+type ExecutorFactory func(req dto.ReqNodeJob) IExecutor
 
 var factories = make(map[model.ExecType]ExecutorFactory)
 
@@ -19,7 +19,7 @@ func GetExecutor(execType model.ExecType) (ExecutorFactory, bool) {
 }
 
 func init() {
-	Register(model.ExecTypeFile, func(req dto.ReqJob) IExecutor {
+	Register(model.ExecTypeFile, func(req dto.ReqNodeJob) IExecutor {
 		return NewFileExecutor(req.Id, req.Name, req.Filename)
 	})
 }

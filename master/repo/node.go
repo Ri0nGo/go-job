@@ -50,7 +50,7 @@ func (j *NodeRepo) Delete(id int) error {
 }
 
 func (j *NodeRepo) QueryList(page model.Page) (model.Page, error) {
-	return paginate.PaginateList[model.Node](j.mysqlDB, page.PageNum, page.PageSize)
+	return paginate.PaginateList[model.Node](j.mysqlDB, page)
 }
 
 func NewNodeRepo(mysqlDB *gorm.DB) INodeRepo {

@@ -9,6 +9,7 @@ var (
 	ErrJobExtNotSupport   = errors.New("不支持的文件后缀")
 	ErrNodeNotExists      = errors.New("节点不存在")
 	ErrFileTooLarge       = errors.New("文件太大了")
+	ErrFileNotExists      = errors.New("文件不存在")
 	ErrInvalidAddress     = errors.New("填写的地址格式不合法，格式：Ip:Port")
 	ErrJobUseCurrentNode  = errors.New("有任务依赖该节点，无法删除")
 	ErrUserNotPermission  = errors.New("您的权限不足，暂无法使用此功能")
@@ -21,6 +22,7 @@ var returnErrList = []error{
 	ErrJobExtNotSupport,
 	ErrNodeNotExists,
 	ErrFileTooLarge,
+	ErrFileNotExists,
 	ErrInvalidAddress,
 	ErrJobUseCurrentNode,
 	ErrUserNotPermission,

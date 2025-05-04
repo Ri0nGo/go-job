@@ -1,8 +1,10 @@
 package paginate
 
 import (
+	"fmt"
 	"go-job/internal/model"
 	"gorm.io/gorm"
+	"strings"
 )
 
 const (
@@ -11,14 +13,14 @@ const (
 	maxPageSize     = 50
 )
 
-func PaginateList[T any](db *gorm.DB, pageNum, pageSize int) (model.Page, error) {
-	if pageNum < 1 {
-		pageNum = defaultPageNum
+func PaginateList[T any](db *gorm.DB, page model.Page) (model.Page, error) {
+	if page.PageNum < 1 {
+		page.PageNum = defaultPageNum
 	}
-	if pageSize < 1 {
-		pageSize = defaultPageSize
-	} else if pageSize > maxPageSize {
-		pageSize = maxPageSize
+	if page.PageSize < 1 {
+		page.PageSize = defaultPageSize
+	} else if page.PageSize > maxPageSize {
+		page.PageSize = maxPageSize
 	}
 
 	var (
@@ -28,62 +30,76 @@ func PaginateList[T any](db *gorm.DB, pageNum, pageSize int) (model.Page, error)
 		total  int64
 	)
 
-	offset := (pageNum - 1) * pageSize
+	offset := (page.PageNum - 1) * page.PageSize
 
 	// Count total
 	if err := db.Model(&m).Count(&total).Error; err != nil {
 		return result, err
 	}
-	if err := db.Model(&m).Limit(pageSize).Offset(offset).Find(&list).Error; err != nil {
+	tx := db.Model(&m).Limit(page.PageSize).Offset(offset)
+
+	// order
+	if page.Sort != "" {
+		var orderBy string
+		if strings.ToLower(page.Order) == "desc" {
+			orderBy = fmt.Sprintf("%s desc", page.Sort)
+		} else {
+			orderBy = fmt.Sprintf("%s asc", page.Sort)
+		}
+		tx = tx.Order(orderBy)
+	}
+	if err := tx.Find(&list).Error; err != nil {
 		return result, err
 	}
-	result = model.Page{
-		Total:    total,
-		PageSize: pageSize,
-		PageNum:  pageNum,
-		Data:     list,
-	}
-	return result, nil
+	page.Data = list
+	return page, nil
 }
 
-func PaginateListV2[T any](db *gorm.DB, pageNum, pageSize int, queryFn func(*gorm.DB) *gorm.DB) (model.Page, error) {
-	if pageNum < 1 {
-		pageNum = defaultPageNum
+func PaginateListV2[T any](db *gorm.DB, page model.Page, fns ...func(*gorm.DB) *gorm.DB) (model.Page, error) {
+	if page.PageNum < 1 {
+		page.PageNum = defaultPageNum
 	}
-	if pageSize < 1 {
-		pageSize = defaultPageSize
-	} else if pageSize > maxPageSize {
-		pageSize = maxPageSize
+	if page.PageSize < 1 {
+		page.PageSize = defaultPageSize
+	} else if page.PageSize > maxPageSize {
+		page.PageSize = maxPageSize
 	}
 
 	var (
 		result model.Page
 		list   []T
-		total  int64
 	)
 
-	offset := (pageNum - 1) * pageSize
+	offset := (page.PageNum - 1) * page.PageSize
 
 	query := db.Model(new(T))
-	if queryFn != nil {
-		query = queryFn(query)
+	if fns != nil {
+		for _, fn := range fns {
+			query = fn(query)
+		}
 	}
 
 	// Count total
-	if err := query.Count(&total).Error; err != nil {
+	if err := query.Count(&page.Total).Error; err != nil {
 		return result, err
+	}
+
+	// order
+	if page.Sort != "" {
+		var orderBy string
+		if strings.ToLower(page.Order) == "desc" {
+			orderBy = fmt.Sprintf("%s desc", page.Sort)
+		} else {
+			orderBy = fmt.Sprintf("%s asc", page.Sort)
+		}
+		query = query.Order(orderBy)
 	}
 
 	// Query data
-	if err := query.Limit(pageSize).Offset(offset).Find(&list).Error; err != nil {
+	if err := query.Limit(page.PageSize).Offset(offset).Find(&list).Error; err != nil {
 		return result, err
 	}
 
-	result = model.Page{
-		Total:    total,
-		PageSize: pageSize,
-		PageNum:  pageNum,
-		Data:     list,
-	}
-	return result, nil
+	page.Data = list
+	return page, nil
 }

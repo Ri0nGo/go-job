@@ -242,6 +242,10 @@ func (a *UserApi) BindEmail(ctx *gin.Context) {
 	}
 	if err = a.userService.UserBind(uc.Uid, req.Email); err != nil {
 		slog.Error("bind user email err", "err", err)
+		if errors.Is(err, service.ErrDuplicateEmail) {
+			dto.NewJsonResp(ctx).FailWithMsg(dto.UserEmailBindErr, err.Error())
+			return
+		}
 		dto.NewJsonResp(ctx).Fail(dto.UserEmailBindErr)
 		return
 	}

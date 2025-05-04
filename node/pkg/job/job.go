@@ -71,7 +71,7 @@ func GetAllJobs() []*Job {
 
 // ============= job 对象 ============= //
 
-func NewJob(ctx context.Context, cancel context.CancelFunc, req dto.ReqJob, iExecutor executor.IExecutor) *Job {
+func NewJob(ctx context.Context, cancel context.CancelFunc, req dto.ReqNodeJob, iExecutor executor.IExecutor) *Job {
 	return &Job{
 		Ctx:    ctx,
 		Cancel: cancel,

@@ -29,9 +29,9 @@ const (
 type IJobService interface {
 	GetJob(uid, id int) (model.Job, error)
 	GetJobList(uid int, page model.Page) (model.Page, error)
-	AddJob(job model.Job) error
+	AddJob(job dto.ReqJob) error
 	DeleteJob(uid, id int) error
-	UpdateJob(job model.Job) error
+	UpdateJob(job dto.ReqJob) error
 	SendJobToNode(job model.Job, node model.Node, operation jobOperation) error
 }
 
@@ -47,7 +47,7 @@ func (j *JobService) GetJob(uid, id int) (model.Job, error) {
 	if err != nil {
 		return model.Job{}, err
 	}
-	job.HasPermission = j.hasPermission(uid, &job)
+	//job.HasPermission = j.hasPermission(uid, &job)
 	return job, nil
 }
 
@@ -59,7 +59,7 @@ func (j *JobService) hasPermission(uid int, job *model.Job) bool {
 
 func (j *JobService) GetJobList(uid int, page model.Page) (model.Page, error) {
 	// 查询jobs
-	p, err := j.JobRepo.QueryList(page)
+	p, err := j.JobRepo.QueryListByUID(uid, page)
 	if err != nil {
 		return p, err
 	}
@@ -90,51 +90,84 @@ func (j *JobService) GetJobList(uid int, page model.Page) (model.Page, error) {
 	for _, v := range jobs {
 		nodeIds = append(nodeIds, v.NodeID)
 		data = append(data, dto.RespJob{
-			Id:            v.Id,
-			Name:          v.Name,
-			ExecType:      v.ExecType,
-			CronExpr:      v.CronExpr,
-			Active:        v.Active,
-			NodeID:        v.NodeID,
-			NodeName:      nodeMap[v.NodeID],
-			FileName:      v.Internal.FileMeta.Filename,
-			CreatedTime:   v.CreatedTime,
-			HasPermission: j.hasPermission(uid, &v),
+			Id:             v.Id,
+			Name:           v.Name,
+			ExecType:       v.ExecType,
+			CronExpr:       v.CronExpr,
+			Active:         v.Active,
+			NodeID:         v.NodeID,
+			NodeName:       nodeMap[v.NodeID],
+			FileName:       v.Internal.FileMeta.Filename,
+			CreatedTime:    v.CreatedTime,
+			NotifyStatus:   v.Internal.Notify.NotifyStatus,
+			NotifyType:     v.Internal.Notify.NotifyType,
+			NotifyStrategy: v.Internal.Notify.NotifyStrategy,
+			NotifyMark:     v.Internal.Notify.NotifyMark,
+			UserId:         v.UserId,
+			//HasPermission: j.hasPermission(uid, &v),  // note 用户只显示自己创建的任务，后续管理员管理所有的任务
 		})
 	}
 	p.Data = data
 	return p, nil
 }
 
-func (j *JobService) AddJob(job model.Job) error {
+func reqJobToModelJob(req dto.ReqJob) model.Job {
+	return model.Job{
+		Id:       req.Id,
+		Name:     req.Name,
+		ExecType: req.ExecType,
+		CronExpr: req.CronExpr,
+		Active:   req.Active,
+		NodeID:   req.NodeID,
+		UserId:   req.UserId,
+		Internal: model.JobInternal{
+			Notify: model.JobNotify{
+				NotifyStatus:   req.NotifyStatus,
+				NotifyType:     req.NotifyType,
+				NotifyStrategy: req.NotifyStrategy,
+				NotifyMark:     req.NotifyMark,
+			},
+		},
+		FileName: req.FileName,
+		FileKey:  req.FileKey,
+	}
+
+}
+func (j *JobService) AddJob(req dto.ReqJob) error {
+	var job = reqJobToModelJob(req)
+
+	// 处理执行方式
 	if err := j.parseExecType(&job); err != nil {
 		return err
 	}
 
+	// 解析cron表达式
 	if err := j.parseCrontab(job.CronExpr); err != nil {
 		slog.Error("parse crontab error", "err", err)
 		return ErrCronExprParse
 	}
 
+	// 查询节点，用户，校验信息
 	node, err := j.NodeRepo.QueryById(job.NodeID)
 	if err != nil {
 		return ErrNodeNotExists
 	}
-
 	user, err := j.userRepo.QueryById(job.UserId)
 	if err != nil {
 		return err
 	}
-	if job.NotifyType == model.NotifyTypeEmail && job.NotifyMark != user.Email {
+	if job.Internal.Notify.NotifyType == model.NotifyTypeEmail &&
+		job.Internal.Notify.NotifyMark != user.Email {
 		return errors.New("请填写当前用户的邮箱")
 	}
+
 	// 将数据插入数据库
 	err = j.JobRepo.Insert(&job)
 	if err != nil {
 		return err
 	}
 
-	// 发送任务到节点中
+	// 发送任务到节点中， 由node处理是否开始执行
 	err = j.sendDataToNode(job, node)
 	if err != nil {
 		if job.Id != 0 {
@@ -149,7 +182,8 @@ func (j *JobService) AddJob(job model.Job) error {
 	// 清除缓存中的文件
 	upload.DeleteFileMeta(job.FileKey)
 
-	if job.NotifyStatus == model.NotifyStatusEnabled {
+	// 添加通知数据到缓存中
+	if job.Internal.Notify.NotifyStatus == model.NotifyStatusEnabled {
 		j.notifyStore.Set(context.Background(), job.Id, GenNotifyConfig(job))
 	}
 
@@ -160,9 +194,9 @@ func GenNotifyConfig(job model.Job) notify.NotifyConfig {
 	return notify.NotifyConfig{
 		JobID:          job.Id,
 		Name:           job.Name,
-		NotifyStrategy: job.NotifyStrategy,
-		NotifyType:     job.NotifyType,
-		NotifyMark:     job.NotifyMark,
+		NotifyStrategy: job.Internal.Notify.NotifyStrategy,
+		NotifyType:     job.Internal.Notify.NotifyType,
+		NotifyMark:     job.Internal.Notify.NotifyMark,
 	}
 }
 
@@ -222,7 +256,7 @@ func (j *JobService) sendJobFileInNode(job model.Job, node model.Node) error {
 
 // sendJobToNode 发送任务到节点
 func (j *JobService) SendJobToNode(job model.Job, node model.Node, operation jobOperation) error {
-	req := dto.ReqJob{
+	req := dto.ReqNodeJob{
 		Id:       job.Id,
 		Name:     job.Name,
 		ExecType: job.ExecType,
@@ -298,7 +332,7 @@ func (j *JobService) parseExecType(job *model.Job) error {
 	case model.ExecTypeFile:
 		fileMeta, ok := upload.GetFileMeta(job.FileKey)
 		if !ok {
-			return errors.New("file not exist")
+			return ErrFileNotExists
 		}
 		job.Internal.FileMeta = fileMeta
 	default:
@@ -334,18 +368,22 @@ func (j *JobService) DeleteJob(uid, id int) error {
 		return err
 	}
 
-	if job.NotifyStatus == model.NotifyStatusEnabled {
+	if job.Internal.Notify.NotifyStatus == model.NotifyStatusEnabled {
 		j.notifyStore.Delete(context.Background(), job.Id)
 	}
 	return nil
 }
 
-func (j *JobService) UpdateJob(job model.Job) error {
+func (j *JobService) UpdateJob(req dto.ReqJob) error {
+	var job = reqJobToModelJob(req)
+
+	// 校验cron表达式
 	if err := j.parseCrontab(job.CronExpr); err != nil {
 		slog.Error("parse crontab error", "err", err)
 		return ErrCronExprParse
 	}
 
+	// 校验节点，身份信息
 	dbJob, err := j.GetJob(job.UserId, job.Id)
 	if err != nil {
 		return err
@@ -358,16 +396,17 @@ func (j *JobService) UpdateJob(job model.Job) error {
 		return errors.New("node not found")
 	}
 
+	// 处理文件信息
 	switch job.ExecType {
 	case model.ExecTypeFile:
 		if len(job.FileName) == 0 && len(job.FileKey) == 0 {
-			return errors.New("file name or file key is empty")
+			return ErrFileNotExists
 		}
 		// 执行文件修改了
 		if len(job.FileKey) > 0 {
 			fileMeta, b := upload.GetFileMeta(job.FileKey)
 			if !b {
-				return errors.New("file not exist")
+				return ErrFileNotExists
 			}
 			job.Internal = dbJob.Internal
 			job.Internal.FileMeta = fileMeta
@@ -398,12 +437,11 @@ func (j *JobService) UpdateJob(job model.Job) error {
 		return ErrSyncExecFileToNode
 	}
 
-	if dbJob.NotifyStatus == model.NotifyStatusEnabled {
+	if dbJob.Internal.Notify.NotifyStatus == model.NotifyStatusEnabled {
 		j.notifyStore.Delete(context.Background(), job.Id)
-	}
-	if job.NotifyStatus == model.NotifyStatusEnabled {
 		j.notifyStore.Set(context.Background(), job.Id, GenNotifyConfig(job))
 	}
+
 	return nil
 }
 

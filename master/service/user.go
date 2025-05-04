@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"github.com/go-sql-driver/mysql"
 	"go-job/internal/model"
 	"go-job/master/repo"
 	"golang.org/x/crypto/bcrypt"
@@ -11,6 +12,7 @@ import (
 var (
 	ErrUsernameDuplicate     = errors.New("duplicate username")
 	ErrInvalidUserOrPassword = errors.New("用户名或密码不对")
+	ErrDuplicateEmail        = errors.New("邮箱已被占用")
 )
 
 type IUserService interface {
@@ -62,11 +64,16 @@ func (s *UserService) AddUser(user model.User) (model.User, error) {
 	user.Password = string(hash)
 
 	err = s.UserRepo.Insert(&user)
+	var me *mysql.MySQLError
 	switch {
 	case err == nil:
 		return user, nil
-	case errors.Is(err, gorm.ErrDuplicatedKey):
-		return user, ErrUsernameDuplicate
+	case errors.As(err, &me):
+		const duplicateErr uint16 = 1062
+		if me.Number == duplicateErr {
+			return user, ErrUsernameDuplicate
+		}
+		return user, err
 	default:
 		return user, err
 	}
@@ -105,7 +112,14 @@ func (s *UserService) Login(username, password string) (model.DomainUser, error)
 }
 
 func (s *UserService) UserBind(id int, email string) error {
-	return s.UserRepo.Update(model.User{Id: id, Email: email})
+	err := s.UserRepo.Update(model.User{Id: id, Email: email})
+	if me, ok := err.(*mysql.MySQLError); ok {
+		const duplicateErr uint16 = 1062
+		if me.Number == duplicateErr {
+			return ErrDuplicateEmail
+		}
+	}
+	return err
 }
 
 func NewUserService(userRepo repo.IUserRepo) IUserService {

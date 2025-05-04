@@ -36,7 +36,7 @@ func (h *JobHandler) RegisterRoutes(server *gin.RouterGroup) {
 
 // AddJob 添加任务
 func (h *JobHandler) AddJob(ctx *gin.Context) {
-	var req dto.ReqJob
+	var req dto.ReqNodeJob
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		slog.Error("add job bind json err:", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
@@ -66,7 +66,7 @@ func (h *JobHandler) DeleteJob(ctx *gin.Context) {
 }
 
 func (h *JobHandler) UpdateJob(ctx *gin.Context) {
-	var req dto.ReqJob
+	var req dto.ReqNodeJob
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return

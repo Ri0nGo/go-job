@@ -17,9 +17,9 @@ var (
 )
 
 type IJobService interface {
-	AddJob(ctx context.Context, req dto.ReqJob) error
+	AddJob(ctx context.Context, req dto.ReqNodeJob) error
 	DeleteJob(ctx context.Context, id int)
-	UpdateJob(ctx context.Context, req dto.ReqJob) error
+	UpdateJob(ctx context.Context, req dto.ReqNodeJob) error
 	GetJob(ctx context.Context, id int) (*job.Job, error)
 }
 
@@ -30,7 +30,7 @@ func NewJobService() *JobService {
 	return &JobService{}
 }
 
-func (s *JobService) AddJob(ctx context.Context, req dto.ReqJob) error {
+func (s *JobService) AddJob(ctx context.Context, req dto.ReqNodeJob) error {
 	// job 已经存在，不能重复添加
 	if _, ok := job.GetJob(req.Id); ok {
 		slog.Error("job already exists, don't add job", "job id", req.Id,
@@ -50,7 +50,7 @@ func (s *JobService) AddJob(ctx context.Context, req dto.ReqJob) error {
 	return nil
 }
 
-func (s *JobService) buildJobItem(ctx context.Context, req dto.ReqJob) (*job.Job, error) {
+func (s *JobService) buildJobItem(ctx context.Context, req dto.ReqNodeJob) (*job.Job, error) {
 	// 获取对于的执行器
 	exec, err := s.newExecutor(ctx, req)
 	if err != nil {
@@ -86,7 +86,7 @@ func (s *JobService) removeJob(j *job.Job) {
 	job.RemoveJob(j.JobMeta.Id)
 }
 
-func (s *JobService) UpdateJob(ctx context.Context, req dto.ReqJob) error {
+func (s *JobService) UpdateJob(ctx context.Context, req dto.ReqNodeJob) error {
 	j, ok := job.GetJob(req.Id)
 	if !ok {
 		return errJobNotFound
@@ -113,7 +113,7 @@ func (s *JobService) GetJob(ctx context.Context, id int) (*job.Job, error) {
 	return j, nil
 }
 
-func (s *JobService) newExecutor(ctx context.Context, req dto.ReqJob) (executor.IExecutor, error) {
+func (s *JobService) newExecutor(ctx context.Context, req dto.ReqNodeJob) (executor.IExecutor, error) {
 	factory, ok := executor.GetExecutor(req.ExecType)
 	if !ok {
 		return nil, fmt.Errorf("unsupported executor type: %v", req.ExecType)

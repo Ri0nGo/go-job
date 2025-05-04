@@ -92,7 +92,7 @@ func (a *JobApi) GetJobList(ctx *gin.Context) {
 }
 
 func (a *JobApi) AddJob(ctx *gin.Context) {
-	var req model.Job
+	var req dto.ReqJob
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		slog.Error("add job param err", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
@@ -142,7 +142,7 @@ func (a *JobApi) DeleteJob(ctx *gin.Context) {
 }
 
 func (a *JobApi) UpdateJob(ctx *gin.Context) {
-	var req model.Job
+	var req dto.ReqJob
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		slog.Error("update job paras err:", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)

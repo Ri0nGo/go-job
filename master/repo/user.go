@@ -41,7 +41,7 @@ func (j *UserRepo) Delete(id int) error {
 }
 
 func (j *UserRepo) QueryList(page model.Page) (model.Page, error) {
-	return paginate.PaginateList[model.DomainUser](j.mysqlDB, page.PageNum, page.PageSize)
+	return paginate.PaginateList[model.DomainUser](j.mysqlDB, page)
 }
 
 func (j *UserRepo) QueryByUsername(username string) (model.User, error) {

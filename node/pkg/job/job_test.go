@@ -86,8 +86,8 @@ func buildExecutor(name string) *fileExecutor {
 	}
 }
 
-func generateTestCase() []dto.ReqJob {
-	return []dto.ReqJob{
+func generateTestCase() []dto.ReqNodeJob {
+	return []dto.ReqNodeJob{
 		{
 			Id:       1,
 			Name:     "test-01",

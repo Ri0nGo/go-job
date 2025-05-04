@@ -21,7 +21,7 @@ func InitJobDataToNode(mysqlDB *gorm.DB, jobSvc service.IJobService,
 	if err != nil {
 		panic(err)
 	}
-	
+
 	for _, job := range jobs {
 		// 发送job到node
 		node := nodeM[job.NodeID]
@@ -32,7 +32,7 @@ func InitJobDataToNode(mysqlDB *gorm.DB, jobSvc service.IJobService,
 		}
 
 		// 初始化任务通知数据
-		if job.NotifyStatus == model.NotifyStatusEnabled {
+		if job.Internal.Notify.NotifyStatus == model.NotifyStatusEnabled {
 			notifyStore.Set(context.Background(), job.Id, service.GenNotifyConfig(job))
 		}
 	}
