@@ -2,6 +2,7 @@ package service
 
 import (
 	"go-job/internal/model"
+	"go-job/master/pkg/metrics"
 	"go-job/master/repo"
 )
 
@@ -23,7 +24,21 @@ func (s *NodeService) GetNode(id int) (model.Node, error) {
 }
 
 func (s *NodeService) GetNodeList(page model.Page) (model.Page, error) {
-	return s.NodeRepo.QueryList(page)
+	data, err := s.NodeRepo.QueryList(page)
+	if err != nil {
+		return data, err
+	}
+
+	// 处理节点指标数据
+	nodes := data.Data.([]model.Node)
+	nodeMetric := metrics.GetNodeMetrics()
+	for i, node := range nodes {
+		if m, ok := nodeMetric.Get(node.Id); ok {
+			nodes[i].Online = m.Online
+			nodes[i].CheckTime = m.CheckTime
+		}
+	}
+	return data, nil
 }
 
 func (s *NodeService) AddNode(node model.Node) error {

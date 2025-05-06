@@ -3,13 +3,14 @@ package job
 import (
 	"context"
 	"go-job/internal/model"
+	"go-job/master/pkg/metrics"
 	"go-job/master/pkg/notify"
 	"go-job/master/service"
 	"gorm.io/gorm"
 	"log/slog"
 )
 
-func InitJobDataToNode(mysqlDB *gorm.DB, jobSvc service.IJobService,
+func InitGlobalData(mysqlDB *gorm.DB, jobSvc service.IJobService,
 	notifyStore notify.INotifyStore) error {
 	// 查询所有的job
 	jobs, err := queryAllJobs(mysqlDB)
@@ -21,6 +22,16 @@ func InitJobDataToNode(mysqlDB *gorm.DB, jobSvc service.IJobService,
 	if err != nil {
 		panic(err)
 	}
+
+	initJobData(nodeM, jobs, jobSvc, notifyStore)
+
+	initNodeMetrics(nodeM)
+
+	return nil
+}
+
+func initJobData(nodeM map[int]model.Node, jobs []model.Job,
+	jobSvc service.IJobService, notifyStore notify.INotifyStore) {
 
 	for _, job := range jobs {
 		// 发送job到node
@@ -36,7 +47,11 @@ func InitJobDataToNode(mysqlDB *gorm.DB, jobSvc service.IJobService,
 			notifyStore.Set(context.Background(), job.Id, service.GenNotifyConfig(job))
 		}
 	}
-	return nil
+}
+
+func initNodeMetrics(nodeM map[int]model.Node) {
+	metrics.InitNodeMetrics(context.Background(), nodeM)
+	go metrics.GetNodeMetrics().Monitor()
 }
 
 func queryAllJobs(db *gorm.DB) ([]model.Job, error) {

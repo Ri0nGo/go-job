@@ -9,6 +9,8 @@ type Node struct {
 	Address     string    `json:"address" binding:"required"`
 	CreatedTime time.Time `json:"created_at" gorm:"column:created_time;autoCreateTime"`
 	UpdatedTime time.Time `json:"updated_at" gorm:"column:updated_time;autoUpdateTime"`
+	Online      bool      `json:"online" gorm:"-"`
+	CheckTime   time.Time `json:"check_time" gorm:"-"`
 }
 
 func (Node) TableName() string {
