@@ -88,6 +88,7 @@ func (a *NodeApi) AddNode(ctx *gin.Context) {
 		}
 		return
 	}
+
 	dto.NewJsonResp(ctx).Success()
 }
 

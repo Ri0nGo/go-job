@@ -48,10 +48,12 @@ type NodeMetric struct {
 	model.Node
 }
 
-func (m *NodeMetrics) Set(nodeId int, metric *NodeMetric) {
+func (m *NodeMetrics) Set(nodeId int, node model.Node) {
 	m.mux.Lock()
 	defer m.mux.Unlock()
-	m.nodes[nodeId] = metric
+	m.nodes[nodeId] = &NodeMetric{
+		Node: node,
+	}
 }
 
 func (m *NodeMetrics) Get(nodeId int) (*NodeMetric, bool) {
