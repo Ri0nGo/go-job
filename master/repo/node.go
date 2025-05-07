@@ -10,6 +10,7 @@ type INodeRepo interface {
 	QueryById(id int) (model.Node, error)
 	QueryByIds(ids []int) ([]model.Node, error)
 	Inserts([]model.Node) error
+	Insert(*model.Node) error
 	Update(model.Node) error
 	Delete(id int) error
 	QueryList(page model.Page) (model.Page, error)
@@ -36,6 +37,10 @@ func (j *NodeRepo) Inserts(nodes []model.Node) error {
 		return nil
 	}
 	return j.mysqlDB.Create(&nodes).Error
+}
+
+func (j *NodeRepo) Insert(node *model.Node) error {
+	return j.mysqlDB.Create(node).Error
 }
 
 func (j *NodeRepo) Update(node model.Node) error {

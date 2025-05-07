@@ -42,10 +42,10 @@ func (s *NodeService) GetNodeList(page model.Page) (model.Page, error) {
 }
 
 func (s *NodeService) AddNode(node model.Node) error {
-	if err := s.NodeRepo.Inserts([]model.Node{node}); err != nil {
+	if err := s.NodeRepo.Insert(&node); err != nil {
 		return err
 	}
-	metrics.GetNodeMetrics().Set(node.Id, node)
+	metrics.GetNodeMetrics().SetAndCheck(node.Id, node)
 	return nil
 }
 

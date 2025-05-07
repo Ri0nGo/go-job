@@ -24,14 +24,24 @@ var (
 
 type NodeOption func(m *NodeMetrics)
 
-func WithTimeout(timeout time.Duration) NodeOption {
+func WithNodeTimeout(t int) NodeOption {
 	return func(m *NodeMetrics) {
+		var timeout = time.Duration(t) * time.Second
+		if t == 0 {
+			timeout = defaultCheckoutNodeTimeout
+			slog.Error("metrics node timeout is zero, will use default config")
+		}
 		m.timeout = timeout
 	}
 }
 
-func WithInterval(interval time.Duration) NodeOption {
+func WithNodeInterval(t int) NodeOption {
 	return func(m *NodeMetrics) {
+		var interval = time.Duration(t) * time.Second
+		if interval == 0 {
+			interval = defaultInterval
+			slog.Error("metrics node interval is zero, will use default config")
+		}
 		m.interval = interval
 	}
 }
@@ -54,6 +64,24 @@ func (m *NodeMetrics) Set(nodeId int, node model.Node) {
 	m.nodes[nodeId] = &NodeMetric{
 		Node: node,
 	}
+}
+
+func (m *NodeMetrics) SetAndCheck(nodeId int, node model.Node) {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	nm := &NodeMetric{
+		Node: node,
+	}
+	m.nodes[nodeId] = nm
+
+	go func() {
+		updateNodeMetric(nm, isConnected(node.Address, m.timeout))
+	}()
+}
+
+func updateNodeMetric(nm *NodeMetric, online bool) {
+	nm.Node.Online = online
+	nm.Node.UpdatedTime = time.Now()
 }
 
 func (m *NodeMetrics) Get(nodeId int) (*NodeMetric, bool) {
