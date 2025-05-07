@@ -27,3 +27,8 @@ smtp:
   key: xxx
   smtp_host: "xx"
   smtp_port: 0
+
+metrics:
+  node:
+    interval: 10
+    timeout: 2

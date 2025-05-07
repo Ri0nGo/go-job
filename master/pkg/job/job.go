@@ -3,6 +3,7 @@ package job
 import (
 	"context"
 	"go-job/internal/model"
+	"go-job/master/pkg/config"
 	"go-job/master/pkg/metrics"
 	"go-job/master/pkg/notify"
 	"go-job/master/service"
@@ -50,7 +51,9 @@ func initJobData(nodeM map[int]model.Node, jobs []model.Job,
 }
 
 func initNodeMetrics(nodeM map[int]model.Node) {
-	metrics.InitNodeMetrics(context.Background(), nodeM)
+	metrics.InitNodeMetrics(context.Background(), nodeM,
+		metrics.WithNodeTimeout(config.App.Metrics.Node.Timeout),
+		metrics.WithNodeInterval(config.App.Metrics.Node.Interval))
 	go metrics.GetNodeMetrics().Monitor()
 }
 

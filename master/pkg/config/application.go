@@ -3,11 +3,12 @@ package config
 var App *Application
 
 type Application struct {
-	Server Server
-	Data   Data
-	MySQL  MySQL
-	Redis  Redis
-	SMTP   SMTP
+	Server  Server
+	Data    Data
+	MySQL   MySQL
+	Redis   Redis
+	SMTP    SMTP
+	Metrics Metrics
 }
 
 type Server struct {
@@ -43,4 +44,13 @@ type SMTP struct {
 	Key      string `mapstructure:"key"`
 	SMTPHost string `mapstructure:"smtp_host"`
 	SMTPPort int    `mapstructure:"smtp_port"`
+}
+
+type Metrics struct {
+	Node NodeMetric `mapstructure:"node"`
+}
+
+type NodeMetric struct {
+	Interval int `mapstructure:"interval"`
+	Timeout  int `mapstructure:"timeout"`
 }
