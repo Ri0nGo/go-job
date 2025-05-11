@@ -54,7 +54,16 @@ func (j *JobRepo) Update(job *model.Job) error {
 }
 
 func (j *JobRepo) Delete(id int) error {
-	return j.mysqlDB.Where("id = ?", id).Delete(&model.Job{}).Error
+	return j.mysqlDB.Transaction(func(tx *gorm.DB) error {
+		res := tx.Where("id = ?", id).Delete(&model.Job{})
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			return nil
+		}
+		return tx.Where("job_id = ?", id).Delete(&model.JobRecord{}).Error
+	})
 }
 
 func (j *JobRepo) QueryByNodeId(nodeId int) ([]model.Job, error) {
