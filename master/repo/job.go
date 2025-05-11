@@ -8,6 +8,7 @@ import (
 
 type IJobRepo interface {
 	QueryById(id int) (model.Job, error)
+	QueryByIds(id []int) ([]model.Job, error)
 	QueryByNodeId(nodeId int) ([]model.Job, error)
 	Insert(*model.Job) error
 	Inserts([]model.Job) error
@@ -15,6 +16,7 @@ type IJobRepo interface {
 	Delete(id int) error
 	QueryList(page model.Page) (model.Page, error)
 	QueryListByUID(uid int, page model.Page) (model.Page, error)
+	QuerySummary() ([]model.JobStatusCount, error)
 }
 
 type JobRepo struct {
@@ -25,6 +27,12 @@ func (j *JobRepo) QueryById(id int) (model.Job, error) {
 	var job model.Job
 	err := j.mysqlDB.First(&job, id).Error
 	return job, err
+}
+
+func (j *JobRepo) QueryByIds(ids []int) ([]model.Job, error) {
+	var jobs []model.Job
+	err := j.mysqlDB.Where("id IN ?", ids).First(&jobs).Error
+	return jobs, err
 }
 
 func (j *JobRepo) Inserts(jobs []model.Job) error {
@@ -63,6 +71,12 @@ func (j *JobRepo) QueryListByUID(uid int, page model.Page) (model.Page, error) {
 	return paginate.PaginateListV2[model.Job](j.mysqlDB, page, func(db *gorm.DB) *gorm.DB {
 		return db.Where("user_id = ?", uid)
 	})
+}
+
+func (j *JobRepo) QuerySummary() ([]model.JobStatusCount, error) {
+	var data []model.JobStatusCount
+	err := j.mysqlDB.Model(&model.Job{}).Select("active, COUNT(*) as count").Group("active").Scan(&data).Error
+	return data, err
 }
 
 func NewJobRepo(mysqlDB *gorm.DB) IJobRepo {

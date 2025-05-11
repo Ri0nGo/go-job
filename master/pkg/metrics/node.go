@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"go-job/internal/model"
 	"log/slog"
 	"net"
@@ -91,6 +92,16 @@ func (m *NodeMetrics) Get(nodeId int) (*NodeMetric, bool) {
 	return result, ok
 }
 
+func (m *NodeMetrics) All() []*NodeMetric {
+	m.mux.RLock()
+	defer m.mux.RUnlock()
+	result := make([]*NodeMetric, 0, len(m.nodes))
+	for _, nm := range m.nodes {
+		result = append(result, nm)
+	}
+	return result
+}
+
 func (m *NodeMetrics) Remove(nodeId int) {
 	m.mux.Lock()
 	defer m.mux.Unlock()
@@ -102,6 +113,7 @@ func (m *NodeMetrics) BuildNodeMetric(nodes map[int]model.Node) *NodeMetrics {
 	defer m.mux.Unlock()
 
 	for nodeId, node := range nodes {
+		fmt.Println("init node", nodeId, node.Name)
 		m.nodes[nodeId] = &NodeMetric{
 			Node: node,
 		}

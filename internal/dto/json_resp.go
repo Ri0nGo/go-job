@@ -29,7 +29,11 @@ func (j *JsonResp) FailWithMsg(code int, msg string) {
 
 // Fail 响应失败，通过code得到msg
 func (j *JsonResp) Fail(code int, err ...error) {
-	j.responseWithCode(code, nil)
+	if err != nil && len(err) > 0 {
+		j.response(code, err[0].Error(), nil)
+	} else {
+		j.responseWithCode(code, nil)
+	}
 }
 
 func (j *JsonResp) responseWithCode(code int, data any) {
