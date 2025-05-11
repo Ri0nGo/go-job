@@ -23,3 +23,25 @@ ALTER TABLE `go-job`.`job`
 ADD COLUMN `user_id` int NOT NULL COMMENT '用户id',
 ADD COLUMN `notify_mark` varchar(255) NULL COMMENT '通知方式的具体内存，如邮箱地址';
 ```
+
+## 2025-05-02 删除job表中的通知字段
+
+```mysql
+#     `notify_status` tinyint(1) DEFAULT '2' COMMENT '通知状态 1启用；2停用',
+#     `notify_type` smallint DEFAULT NULL COMMENT '通知方式 1邮件',
+#     `notify_strategy` smallint DEFAULT NULL COMMENT '通知策略 1成功后通知；2失败后通知；3总是通知',
+#     `notify_mark` varchar(255) DEFAULT NULL COMMENT '通知方式的具体内存，如邮箱地址',
+ALTER TABLE job_record
+    DROP COLUMN notify_status,
+    DROP COLUMN notify_type,
+    DROP COLUMN notify_strategy,
+    DROP COLUMN notify_mark;
+```
+
+## 2025-05-12 job_record 表新增索引
+
+```mysql
+CREATE INDEX idx_job_id ON job_record(job_id);
+CREATE INDEX idx_status ON job_record(status);
+```
+
