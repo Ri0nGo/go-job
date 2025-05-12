@@ -112,7 +112,7 @@ func (j *Job) OnResultChange(result model.JobExecResult) {
 
 // getNextExecTime 获取job下一次执行时间
 func (j *Job) getNextExecTime() time.Time {
-	return j.Cron.Entry(j.CronEntryID).Next
+	return j.Cron.Entry(j.CronEntryID).Schedule.Next(time.Now())
 }
 
 // Start job开始执行
