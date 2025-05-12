@@ -437,8 +437,11 @@ func (j *JobService) UpdateJob(req dto.ReqJob) error {
 		return ErrSyncExecFileToNode
 	}
 
-	if dbJob.Internal.Notify.NotifyStatus == model.NotifyStatusEnabled {
-		j.notifyStore.Delete(context.Background(), job.Id)
+	err = j.notifyStore.Delete(context.Background(), job.Id)
+	if err != nil {
+		slog.Error("send job to node error", "err", err)
+	}
+	if job.Internal.Notify.NotifyStatus == model.NotifyStatusEnabled {
 		j.notifyStore.Set(context.Background(), job.Id, GenNotifyConfig(job))
 	}
 

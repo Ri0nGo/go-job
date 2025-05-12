@@ -67,3 +67,8 @@ type JobNotify struct {
 	NotifyStrategy NotifyStrategy `json:"notify_strategy" gorm:"column:notify_strategy"`       // 通知策略
 	NotifyMark     string         `json:"notify_mark" gorm:"column:notify_mark"`               // 通知方式的具体内容，可能是邮箱地址，可能是外链。
 }
+
+type JobStatusCount struct {
+	Active JobActiveType `json:"active" gorm:"column:active"`
+	Count  int           `json:"count" gorm:"column:count"`
+}

@@ -47,12 +47,14 @@ func InitWebServer() *WebContainer {
 		service.NewNodeService,
 		service.NewEmailCodeService,
 		service.NewUserService,
+		service.NewDashboardService,
 
 		// api
 		api.NewJobApi,
 		api.NewJobRecordApi,
 		api.NewNodeApi,
 		api.NewUserApi,
+		api.NewDashboardApi,
 
 		// web
 		middleware.NewGinMiddlewares,

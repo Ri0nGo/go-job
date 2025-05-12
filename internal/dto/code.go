@@ -22,6 +22,7 @@ const (
 	nodeModule
 	tagModule
 	jobRecordModule
+	dashboardModule
 )
 
 const (
@@ -85,6 +86,10 @@ var (
 	NodeUpdateFailed = genCodeMsg(nodeModule, 2, "节点更新失败")
 	NodeGetFailed    = genCodeMsg(nodeModule, 3, "节点查询失败")
 	NodeDeleteFailed = genCodeMsg(nodeModule, 4, "节点删除失败")
+)
+
+var (
+	DashboardChartFailed = genCodeMsg(dashboardModule, 0, "图表数据查询失败")
 )
 
 var msgMap = map[int]string{

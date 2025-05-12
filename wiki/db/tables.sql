@@ -6,10 +6,6 @@ CREATE TABLE `job` (
     `active` smallint DEFAULT '1' COMMENT '启用状态 1启用；2停用',
     `cron_expr` varchar(128) DEFAULT NULL COMMENT 'cron 表达式',
     `node_id` int NOT NULL COMMENT '节点id',
-    `notify_status` tinyint(1) DEFAULT '2' COMMENT '通知状态 1启用；2停用',
-    `notify_type` smallint DEFAULT NULL COMMENT '通知方式 1邮件',
-    `notify_strategy` smallint DEFAULT NULL COMMENT '通知策略 1成功后通知；2失败后通知；3总是通知',
-    `notify_mark` varchar(255) DEFAULT NULL COMMENT '通知方式的具体内存，如邮箱地址',
     `user_id` int NOT NULL COMMENT '用户id',
     `internal` json DEFAULT NULL,
     `created_time` datetime DEFAULT NULL,
@@ -21,15 +17,17 @@ CREATE TABLE `job` (
 CREATE TABLE `job_record` (
     `id` int NOT NULL AUTO_INCREMENT,
     `job_id` int NOT NULL,
-    `status` smallint COMMENT '执行状态 0待执行；1运行中；2成功；3失败',
+    `status` smallint DEFAULT NULL COMMENT '执行状态 0待执行；1运行中；2成功；3失败',
     `start_time` datetime DEFAULT NULL COMMENT '开始执行时间',
     `end_time` datetime DEFAULT NULL COMMENT '结束执行时间',
     `duration` float DEFAULT NULL COMMENT '运行耗时',
     `output` text COMMENT '执行文件内容输出',
     `error` text COMMENT '节点执行异常日志',
     `next_exec_time` datetime DEFAULT NULL COMMENT '任务下一次执行时间',
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+    PRIMARY KEY (`id`),
+    KEY `idx_status` (`status`),
+    KEY `idx_job_id` (`job_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=9655 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- 标签表
 CREATE TABLE `tag` (

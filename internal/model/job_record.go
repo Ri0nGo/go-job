@@ -40,6 +40,18 @@ type JobRecordSummary struct {
 	Status       JobStatus `json:"status"`
 }
 
+type JobRecordDayStatusCount struct {
+	Date   time.Time `json:"date"`
+	Status JobStatus `json:"status" gorm:"column:status"`
+	Count  int       `json:"count" gorm:"column:count"`
+}
+
+type JobRecordJobStatusCount struct {
+	JobId  int       `json:"job_id" gorm:"column:job_id"`
+	Status JobStatus `json:"status" gorm:"column:status"`
+	Count  int       `json:"count" gorm:"column:count"`
+}
+
 func (j *JobRecord) TableName() string {
 	return "job_record"
 }
