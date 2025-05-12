@@ -13,4 +13,7 @@ func InitRouter(engine *gin.Engine) {
 	jh := api.NewJobHandler(jobService)
 	jh.RegisterRoutes(group)
 
+	nodeService := service.NewNodeService()
+	nh := api.NewNodeHandler(nodeService)
+	nh.RegisterRoutes(group)
 }

@@ -81,11 +81,12 @@ var (
 )
 
 var (
-	NodeNotExist     = genCodeMsg(nodeModule, 0, "节点不存在")
-	NodeAddFailed    = genCodeMsg(nodeModule, 1, "节点创建失败")
-	NodeUpdateFailed = genCodeMsg(nodeModule, 2, "节点更新失败")
-	NodeGetFailed    = genCodeMsg(nodeModule, 3, "节点查询失败")
-	NodeDeleteFailed = genCodeMsg(nodeModule, 4, "节点删除失败")
+	NodeNotExist         = genCodeMsg(nodeModule, 0, "节点不存在")
+	NodeAddFailed        = genCodeMsg(nodeModule, 1, "节点创建失败")
+	NodeUpdateFailed     = genCodeMsg(nodeModule, 2, "节点更新失败")
+	NodeGetFailed        = genCodeMsg(nodeModule, 3, "节点查询失败")
+	NodeDeleteFailed     = genCodeMsg(nodeModule, 4, "节点删除失败")
+	NodeInstallRefFailed = genCodeMsg(nodeModule, 5, "节点安装依赖失败")
 )
 
 var (

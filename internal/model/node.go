@@ -2,6 +2,12 @@ package model
 
 import "time"
 
+type NodeInstallRefType string
+
+const (
+	NodeInstallPyRefType NodeInstallRefType = "py"
+)
+
 type Node struct {
 	Id          int       `json:"id" gorm:"primary_key"`
 	Name        string    `json:"name" binding:"required"`
