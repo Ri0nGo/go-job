@@ -23,7 +23,7 @@ type ReqId struct {
 
 type ReqJobRecords struct {
 	model.Page
-	JobId int `json:"job_id" form:"job_id" binding:"required"`
+	JobId int `json:"job_id" form:"job_id"`
 }
 
 type RespNodeJob struct {

@@ -43,10 +43,13 @@ func (j *JobRecordRepo) Delete(id int) error {
 }
 
 func (j *JobRecordRepo) QueryList(page model.Page, jobId int) (model.Page, error) {
-	// TODO 这里后面还需要优化查询方式，感觉还需要对分页查询做封装
-	return paginate.PaginateListV2[model.JobRecordSummary](j.mysqlDB, page, func(db *gorm.DB) *gorm.DB {
-		return db.Where("job_id = ?", jobId).Order("id desc")
-	})
+	if jobId == 0 {
+		return paginate.PaginateListV2[model.JobRecordSummary](j.mysqlDB, page)
+	} else {
+		return paginate.PaginateListV2[model.JobRecordSummary](j.mysqlDB, page, func(db *gorm.DB) *gorm.DB {
+			return db.Where("job_id = ?", jobId)
+		})
+	}
 }
 
 func (j *JobRecordRepo) QueryDayStatus(being, end time.Time) ([]model.JobRecordDayStatusCount, error) {
