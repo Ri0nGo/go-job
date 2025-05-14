@@ -13,6 +13,7 @@ type IJobRecordRepo interface {
 	Insert(*model.JobRecord) error
 	Delete(id int) error
 	QueryList(page model.Page, jobId int) (model.Page, error)
+	QueryLastList(page model.Page) (model.Page, error)
 	QueryDayStatus(begin, end time.Time) ([]model.JobRecordDayStatusCount, error)
 	QueryJobStatus(begin, end time.Time) ([]model.JobRecordJobStatusCount, error)
 }
@@ -43,13 +44,9 @@ func (j *JobRecordRepo) Delete(id int) error {
 }
 
 func (j *JobRecordRepo) QueryList(page model.Page, jobId int) (model.Page, error) {
-	if jobId == 0 {
-		return paginate.PaginateListV2[model.JobRecordSummary](j.mysqlDB, page)
-	} else {
-		return paginate.PaginateListV2[model.JobRecordSummary](j.mysqlDB, page, func(db *gorm.DB) *gorm.DB {
-			return db.Where("job_id = ?", jobId)
-		})
-	}
+	return paginate.PaginateListV2[model.JobRecordSummary](j.mysqlDB, page, func(db *gorm.DB) *gorm.DB {
+		return db.Where("job_id = ?", jobId)
+	})
 }
 
 func (j *JobRecordRepo) QueryDayStatus(being, end time.Time) ([]model.JobRecordDayStatusCount, error) {
@@ -76,6 +73,23 @@ func (j *JobRecordRepo) QueryJobStatus(being, end time.Time) ([]model.JobRecordJ
 		return jobs, err
 	}
 	return jobs, nil
+}
+
+func (j *JobRecordRepo) QueryLastList(page model.Page) (model.Page, error) {
+	var jobs []model.JobLastRecord
+	err := j.mysqlDB.Table("job_record AS r").
+		Select("r.id, j.id AS job_id, j.name AS job_name, n.id AS node_id, n.name AS node_name, r.start_time, r.end_time, r.status").
+		Joins("JOIN job j ON r.job_id = j.id").
+		Joins("JOIN node n ON n.id = j.node_id").
+		Order("r.start_time DESC, r.id DESC").
+		Limit(page.PageSize).
+		Scan(&jobs).Error
+	if err != nil {
+		return page, err
+	}
+	page.Total = int64(len(jobs))
+	page.Data = jobs
+	return page, nil
 }
 
 func NewJobRecordRepo(mysqlDB *gorm.DB) IJobRecordRepo {

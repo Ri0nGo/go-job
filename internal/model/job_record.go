@@ -29,6 +29,17 @@ type JobRecord struct {
 	Error        string    `json:"error"`
 }
 
+type JobLastRecord struct {
+	Id        int       `json:"id"`
+	JobId     int       `json:"job_id"`
+	NodeId    int       `json:"node_id"`
+	JobName   string    `json:"job_name"`
+	NodeName  string    `json:"node_name"`
+	Status    JobStatus `json:"status"`
+	StartTime time.Time `json:"start_time"`
+	EndTime   time.Time `json:"end_time"`
+}
+
 // JobRecordSummary jobRecord 简化结构体，移除了大范围输出
 type JobRecordSummary struct {
 	Id           int       `json:"id"`

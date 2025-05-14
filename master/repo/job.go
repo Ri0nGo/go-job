@@ -16,7 +16,7 @@ type IJobRepo interface {
 	Delete(id int) error
 	QueryList(page model.Page) (model.Page, error)
 	QueryListByUID(uid int, page model.Page) (model.Page, error)
-	QuerySummary() ([]model.JobStatusCount, error)
+	QuerySummary(uid int) ([]model.JobStatusCount, error)
 }
 
 type JobRepo struct {
@@ -82,9 +82,12 @@ func (j *JobRepo) QueryListByUID(uid int, page model.Page) (model.Page, error) {
 	})
 }
 
-func (j *JobRepo) QuerySummary() ([]model.JobStatusCount, error) {
+func (j *JobRepo) QuerySummary(uid int) ([]model.JobStatusCount, error) {
 	var data []model.JobStatusCount
-	err := j.mysqlDB.Model(&model.Job{}).Select("active, COUNT(*) as count").Group("active").Scan(&data).Error
+	err := j.mysqlDB.Model(&model.Job{}).Select("active, COUNT(*) as count").
+		Where("user_id = ?", uid).
+		Group("active").
+		Scan(&data).Error
 	return data, err
 }
 

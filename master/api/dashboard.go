@@ -30,7 +30,14 @@ func (a *DashboardApi) RegisterRoutes(group *gin.RouterGroup) {
 
 // GetDashboard 查询节点
 func (a *DashboardApi) GetDashboardSummary(ctx *gin.Context) {
-	summary, err := a.dashboardService.GetDataSummary()
+	uc, err := GetUserClaim(ctx)
+	if err != nil {
+		slog.Error("get user claim err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
+		return
+	}
+
+	summary, err := a.dashboardService.GetDataSummary(uc.Uid)
 	if err != nil {
 		slog.Error("get summary error", err.Error())
 	}

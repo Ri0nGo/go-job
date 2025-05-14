@@ -26,7 +26,16 @@ func (s *JobRecordService) GetJobRecord(id int) (model.JobRecord, error) {
 }
 
 func (s *JobRecordService) GetJobRecordList(page model.Page, jobId int) (model.Page, error) {
-	return s.JobRecordRepo.QueryList(page, jobId)
+	if jobId == 0 {
+		if page.PageSize <= 0 {
+			page.PageSize = 20
+		} else if page.PageSize > 50 {
+			page.PageSize = 50
+		}
+		return s.JobRecordRepo.QueryLastList(page)
+	} else {
+		return s.JobRecordRepo.QueryList(page, jobId)
+	}
 }
 
 func (s *JobRecordService) AddJobRecord(req model.CallbackJobResult) error {

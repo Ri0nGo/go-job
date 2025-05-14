@@ -15,7 +15,7 @@ var (
 )
 
 type IDashboardService interface {
-	GetDataSummary() (dto.RespDashboardTotalData, error) // 卡片头部数据
+	GetDataSummary(uid int) (dto.RespDashboardTotalData, error) // 卡片头部数据
 	GetChartData(req model.ReqDashboardChart) (map[string][]int, error)
 }
 
@@ -24,11 +24,12 @@ type DashboardService struct {
 	JobRecordRepo repo.IJobRecordRepo
 }
 
-func (s *DashboardService) GetDataSummary() (dto.RespDashboardTotalData, error) {
+func (s *DashboardService) GetDataSummary(uid int) (dto.RespDashboardTotalData, error) {
 	var (
 		data      dto.RespDashboardTotalData
 		onlineCnt int
 	)
+
 	// 获取节点数据
 	nodes := metrics.GetNodeMetrics().All()
 	totalNode := len(nodes)
@@ -44,7 +45,7 @@ func (s *DashboardService) GetDataSummary() (dto.RespDashboardTotalData, error) 
 	}
 
 	// 查询任务数量
-	jobStatus, err := s.JobRepo.QuerySummary()
+	jobStatus, err := s.JobRepo.QuerySummary(uid)
 	if err != nil {
 		return data, err
 	}
@@ -80,6 +81,9 @@ func (s *DashboardService) GetChartData(req model.ReqDashboardChart) (map[string
 			utils.TimestampToTime(req.End))
 		if err != nil {
 			return result, err
+		}
+		if len(data) == 0 {
+			return result, nil
 		}
 
 		jobIds := make([]int, 0)
