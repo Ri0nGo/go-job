@@ -34,8 +34,8 @@ func (h *NodeHandler) InstallRef(ctx *gin.Context) {
 
 	version, err := h.NodeService.InstallRef(ctx.Request.Context(), req)
 	if err != nil {
-		slog.Error("add Node error", "req", req, "err", err)
-		dto.NewJsonResp(ctx).Fail(dto.NodeInstallRefFailed)
+		slog.Error("install node ref error", "req", req, "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.NodeInstallRefFailed, err)
 		return
 	}
 

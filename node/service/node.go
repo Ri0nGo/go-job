@@ -1,12 +1,12 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"go-job/internal/dto"
 	"go-job/internal/model"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -21,7 +21,6 @@ type INodeService interface {
 
 type installRefInfo struct {
 	pkgName string
-	version string
 }
 
 type NodeService struct {
@@ -36,7 +35,7 @@ func NewNodeService() *NodeService {
 		installRefHandlers: make(map[model.NodeInstallRefType]func(ctx context.Context, info installRefInfo) (string, error)),
 	}
 
-	s.installRefHandlers[model.NodeInstallPyRefType] = s.installPyRef
+	s.installRefHandlers[model.NodeInstallPyRefType] = installPyRef
 	return s
 }
 
@@ -50,35 +49,43 @@ func (s *NodeService) InstallRef(ctx context.Context, req dto.ReqNodeRef) (strin
 	}
 	return fn(ctx, installRefInfo{
 		pkgName: req.PkgName,
-		version: req.Version,
 	})
 }
 
-func (s *NodeService) installPyRef(ctx context.Context, info installRefInfo) (string, error) {
+func installPyRef(ctx context.Context, info installRefInfo) (string, error) {
 	name := info.pkgName
-	if len(info.version) > 0 {
-		name = fmt.Sprintf("%s==%s", info.pkgName, info.version)
-	}
 	cmd := exec.CommandContext(ctx, "pip", "install", name)
 
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	var (
+		stderr bytes.Buffer
+		stdout bytes.Buffer
+	)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("install py pkg failed: %w", err)
+		return "", fmt.Errorf("install py pkg failed: %w, stderr: %s, stdout: %s",
+			err, stderr.String(), stdout.String())
 	}
 	return getInstalledPyVersion(info.pkgName)
 }
 
 // getInstalledPyVersion 查询python包的版本
 func getInstalledPyVersion(pkgName string) (string, error) {
-	queryVersion := fmt.Sprintf("from importlib.metadata import version; print(version('%s'))", pkgName)
-	cmd := exec.Command("python", "-c", queryVersion)
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
+	script := fmt.Sprintf(`from pkg_resources import get_distribution as d; print(d("%s").version)`, pkgName)
+	cmd := exec.Command("python", "-c", script)
+
+	var (
+		stderr bytes.Buffer
+		stdout bytes.Buffer
+	)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("get py pkg failed: %w, stderr: %s, stdout: %s",
+			err, stderr.String(), stdout.String())
 	}
-	return strings.TrimSpace(string(output)), nil
+	return strings.TrimSpace(stdout.String()), nil
 }
 
 func (s *NodeService) GetNodeInfo(ctx context.Context) map[string]any {

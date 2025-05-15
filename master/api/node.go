@@ -30,6 +30,8 @@ func (a *NodeApi) RegisterRoutes(group *gin.RouterGroup) {
 		nodeGroup.POST("/add", a.AddNode)
 		nodeGroup.PUT("/update", a.UpdateNode)
 		nodeGroup.DELETE("/:id", a.DeleteNode)
+		nodeGroup.POST("/install_ref", a.InstallRef)
+		nodeGroup.GET("/:id/info", a.NodeInfo)
 	}
 }
 
@@ -130,4 +132,37 @@ func (a *NodeApi) UpdateNode(ctx *gin.Context) {
 		return
 	}
 	dto.NewJsonResp(ctx).Success()
+}
+
+func (a *NodeApi) InstallRef(ctx *gin.Context) {
+	var req dto.ReqNodeRef
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		slog.Error("install ref params err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
+		return
+	}
+	data, err := a.NodeService.InstallRef(req)
+	if err != nil {
+		slog.Error("install ref err:", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.NodeInstallRefFailed)
+		return
+	}
+	dto.NewJsonResp(ctx).Success(data)
+}
+
+func (a *NodeApi) NodeInfo(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
+		return
+	}
+
+	data, err := a.NodeService.NodeInfo(id)
+	if err != nil {
+		slog.Error("node info err:", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.NodeInfoFailed)
+		return
+	}
+	dto.NewJsonResp(ctx).Success(data)
 }

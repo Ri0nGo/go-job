@@ -16,6 +16,15 @@ var (
 	DefaultTimeout     = time.Second * 3
 )
 
+func GetJson(ctx context.Context, url string, headers map[string]string, params map[string]string, timeout time.Duration) (*resty.Response, error) {
+	jsonHeader(headers)
+	return defaultRestyClient.SetTimeout(timeout).R().
+		SetContext(ctx).
+		SetHeaders(headers).
+		SetQueryParams(params).
+		Get(url)
+}
+
 func PostJson(ctx context.Context, url string, headers map[string]string, body any, timeout time.Duration) (*resty.Response, error) {
 	jsonHeader(headers)
 	return defaultRestyClient.SetTimeout(timeout).R().

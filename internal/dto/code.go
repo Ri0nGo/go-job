@@ -87,6 +87,7 @@ var (
 	NodeGetFailed        = genCodeMsg(nodeModule, 3, "节点查询失败")
 	NodeDeleteFailed     = genCodeMsg(nodeModule, 4, "节点删除失败")
 	NodeInstallRefFailed = genCodeMsg(nodeModule, 5, "节点安装依赖失败")
+	NodeInfoFailed       = genCodeMsg(nodeModule, 6, "节点信息查询失败")
 )
 
 var (
