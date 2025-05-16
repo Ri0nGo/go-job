@@ -72,7 +72,7 @@ func installPyRef(ctx context.Context, info installRefInfo) (string, error) {
 
 // getInstalledPyVersion 查询python包的版本
 func getInstalledPyVersion(pkgName string) (string, error) {
-	script := fmt.Sprintf(`from pkg_resources import get_distribution as d; print(d("%s").version)`, pkgName)
+	script := fmt.Sprintf(`from importlib.metadata import version; print(version("%s"))`, pkgName)
 	cmd := exec.Command("python", "-c", script)
 
 	var (
