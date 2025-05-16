@@ -31,7 +31,7 @@ func (j *JobRepo) QueryById(id int) (model.Job, error) {
 
 func (j *JobRepo) QueryByIds(ids []int) ([]model.Job, error) {
 	var jobs []model.Job
-	err := j.mysqlDB.Where("id IN ?", ids).First(&jobs).Error
+	err := j.mysqlDB.Where("id IN ?", ids).Find(&jobs).Error
 	return jobs, err
 }
 
