@@ -1,6 +1,6 @@
 # go-job
 
-go-job 是一个任务执行平台，包含master和node两部分，master负责任务的增删改查等，node负责执行任务
+go-job 是一个任务执行平台，包含master和node两部分，master负责用户端的数据展示和操作，node负责执行任务和数据回传
 
 
 ## Feature
