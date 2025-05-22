@@ -1,7 +1,9 @@
 package executor
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"go-job/internal/model"
 	"go-job/internal/pkg/utils"
 	"go-job/node/pkg/config"
@@ -10,7 +12,7 @@ import (
 	"time"
 )
 
-var defaultOutputLen = 1024
+var defaultOutputLen = 10240
 
 type FileExecutor struct {
 	id             int
@@ -65,7 +67,7 @@ func (f *FileExecutor) buildJobExecResult(output string, err error) model.JobExe
 
 func (f *FileExecutor) Execute() (string, error) {
 	var (
-		output []byte
+		output string
 		err    error
 	)
 
@@ -73,14 +75,14 @@ func (f *FileExecutor) Execute() (string, error) {
 	case ".py":
 		output, err = f.execFile()
 	default:
-		output = []byte("不支持的文件类型")
+		output = "不支持的文件类型"
 		err = errors.New("不支持的文件类型")
 	}
 
 	//fmt.Printf("id: %d, name: %s, exec result: %s, err: %v\n",
 	//	f.id, f.name, string(output), err)
 
-	return string(output), err
+	return output, err
 }
 
 func (f *FileExecutor) OnResultChange(fn func(result model.JobExecResult)) {
@@ -96,10 +98,24 @@ func NewFileExecutor(id int, name, fileName string) *FileExecutor {
 	}
 }
 
-func (f *FileExecutor) execFile() (output []byte, err error) {
+func (f *FileExecutor) execFile() (output string, err error) {
 	// 执行文件，这是一次性捕获所有输出，无法实现实时捕获，
 	execFilePath := filepath.Join(config.App.Data.UploadJobDir, f.fileName)
-	// TODO 后续需要修改为实时捕获
 	cmd := exec.Command("python", execFilePath)
-	return cmd.CombinedOutput()
+
+	var (
+		stderr bytes.Buffer
+		stdout bytes.Buffer
+	)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("failed: %v, stderr: %s\n",
+			err, stderr.String())
+	}
+	if stderr.Len() > 0 {
+		return "", fmt.Errorf("stderr: %s", stderr.String())
+	}
+	return stdout.String(), nil
 }
