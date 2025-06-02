@@ -23,7 +23,8 @@ import (
 // Injectors from wire.go:
 
 func InitWebServer() *WebContainer {
-	v := middleware.NewGinMiddlewares()
+	cmdable := database.NewRedisClient()
+	v := middleware.NewGinMiddlewares(cmdable)
 	db := database.NewMySQLWithGORM()
 	iJobRepo := repo.NewJobRepo(db)
 	iNodeRepo := repo.NewNodeRepo(db)
@@ -38,7 +39,6 @@ func InitWebServer() *WebContainer {
 	jobRecordApi := api.NewJobRecordApi(iJobRecordService)
 	iNodeService := service.NewNodeService(iNodeRepo, iJobRepo)
 	nodeApi := api.NewNodeApi(iNodeService)
-	cmdable := database.NewRedisClient()
 	iEmailCodeCache := cache.NewEmailCodeCache(cmdable)
 	iEmailCodeRepo := repo.NewEmailCodeRepo(iEmailCodeCache)
 	iEmailCodeService := service.NewEmailCodeService(iEmailService, iEmailCodeRepo)

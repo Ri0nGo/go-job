@@ -25,13 +25,13 @@ func NewLoginJwtMWBuilder(key string) *LoginJwtMWBuilder {
 	}
 }
 
-func (builder *LoginJwtMWBuilder) SkipPaths(paths []string) *LoginJwtMWBuilder {
-	builder.skipPaths = paths
-	return builder
+func (b *LoginJwtMWBuilder) SkipPaths(paths []string) *LoginJwtMWBuilder {
+	b.skipPaths = paths
+	return b
 }
 
-func (builder *LoginJwtMWBuilder) isSkipPaths(path string) bool {
-	return slice.Contains(builder.skipPaths, path)
+func (b *LoginJwtMWBuilder) isSkipPaths(path string) bool {
+	return slice.Contains(b.skipPaths, path)
 }
 
 func (b *LoginJwtMWBuilder) Builder() gin.HandlerFunc {
