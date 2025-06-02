@@ -5,6 +5,10 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
+/*
+发送邮箱依赖于QQ邮箱
+*/
+
 type QQEmailService struct {
 	key      string // 授权码
 	sender   string

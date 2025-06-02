@@ -29,7 +29,7 @@ func InitWebServer() *WebContainer {
 	iJobRepo := repo.NewJobRepo(db)
 	iNodeRepo := repo.NewNodeRepo(db)
 	iUserRepo := repo.NewUserRepo(db)
-	iEmailService := email.InitEmailService()
+	iEmailService := email.InitEmailService(cmdable)
 	iNotifyStore := notify.InitMemoryNotifyStore(iEmailService)
 	iJobService := service.NewJobService(iJobRepo, iNodeRepo, iUserRepo, iNotifyStore)
 	iUserService := service.NewUserService(iUserRepo)
