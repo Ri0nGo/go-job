@@ -1,22 +1,24 @@
-package email
+package netease163
 
 import (
 	"context"
+	"go-job/internal/iface/email"
 	"gopkg.in/gomail.v2"
 )
 
 /*
-发送邮箱依赖于QQ邮箱
+发送邮箱依赖于163邮箱
 */
 
-type QQEmailService struct {
+type NetEase163EmailService struct {
+	name     string
 	key      string // 授权码
 	sender   string
 	smtpHost string
 	smtpPort int
 }
 
-func (e *QQEmailService) Send(ctx context.Context, emails []string, subject, content string) error {
+func (e *NetEase163EmailService) Send(ctx context.Context, emails []string, subject, content string) error {
 	msg := gomail.NewMessage()
 	msg.SetHeader("From", e.sender)
 	msg.SetHeader("To", emails...)
@@ -28,9 +30,14 @@ func (e *QQEmailService) Send(ctx context.Context, emails []string, subject, con
 	}
 	return nil
 }
+func (e *NetEase163EmailService) Name() string {
+	return e.name
 
-func NewQQEmailService(key, sender, host string, port int) IEmailService {
-	return &QQEmailService{
+}
+
+func NewNetEase163EmailService(name, key, sender, host string, port int) email.IEmailService {
+	return &NetEase163EmailService{
+		name:     name,
 		key:      key,
 		sender:   sender,
 		smtpHost: host,

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	ifaceEmail "go-job/internal/iface/email"
 	"go-job/internal/pkg/email"
 	"go-job/master/repo"
 	"log/slog"
@@ -17,7 +18,7 @@ type IEmailCodeService interface {
 }
 
 type EmailCodeService struct {
-	emailSvc  email.IEmailService
+	emailSvc  ifaceEmail.IEmailService
 	emailRepo repo.IEmailCodeRepo
 }
 
@@ -40,7 +41,7 @@ func (s *EmailCodeService) Verify(ctx context.Context, biz, email, code string) 
 	return s.emailRepo.Verify(ctx, biz, email, code)
 }
 
-func NewEmailCodeService(emailSvc email.IEmailService, emailRepo repo.IEmailCodeRepo) IEmailCodeService {
+func NewEmailCodeService(emailSvc ifaceEmail.IEmailService, emailRepo repo.IEmailCodeRepo) IEmailCodeService {
 	return &EmailCodeService{
 		emailSvc:  emailSvc,
 		emailRepo: emailRepo,

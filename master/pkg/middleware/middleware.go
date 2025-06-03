@@ -11,7 +11,7 @@ import (
 
 const (
 	defaultLimitInterval = time.Second * 1
-	defaultLimitRate     = 1
+	defaultLimitRate     = 50
 )
 
 func NewGinMiddlewares(cmd redis.Cmdable) []gin.HandlerFunc {

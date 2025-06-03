@@ -23,10 +23,17 @@ redis:
   db: 0
   
 smtp:
-  sender: "xxx@xx.com"
-  key: xxx
-  smtp_host: "xx"
-  smtp_port: 0
+  qq:
+    sender: "xxx@qq.com"
+    key: xxx
+    smtp_host: "xx"
+    smtp_port: 0
+  netease163:
+    sender: "xxx@163.com"
+    key: xxx
+    smtp_host: "xx"
+    smtp_port: 0
+
 
 metrics:
   node:

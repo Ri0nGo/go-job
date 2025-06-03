@@ -1,7 +1,8 @@
-package email
+package netease163
 
 import (
 	"context"
+	"github.com/stretchr/testify/assert"
 	"go-job/master/pkg/config"
 	"os"
 	"path/filepath"
@@ -24,15 +25,19 @@ func getMasterConfigPath() string {
 
 }
 
-func TestNewQQEmailService(t *testing.T) {
+func TestNetEase163EmailService(t *testing.T) {
 	testEmails := []string{
 		"920728039@qq.com",
 	}
 	configPath := getMasterConfigPath()
 	config.InitConfig(configPath)
-	em := NewQQEmailService(config.App.SMTP.Key, config.App.SMTP.Sender,
-		config.App.SMTP.SMTPHost, config.App.SMTP.SMTPPort)
-	err := em.Send(context.Background(), testEmails, "发送邮件啦", time.Now().Format(time.DateTime)+": 这是一封测试邮件，")
+	smtpCfg, ok := config.App.SMTP["netease163"]
+	assert.Equal(t, ok, true)
+	svc := NewNetEase163EmailService("test163", smtpCfg.Key,
+		smtpCfg.Sender,
+		smtpCfg.SMTPHost,
+		smtpCfg.SMTPPort)
+	err := svc.Send(context.Background(), testEmails, "163发送邮件啦", time.Now().Format(time.DateTime)+": 这是一封测试邮件，")
 	if err != nil {
 		t.Error(err)
 	}

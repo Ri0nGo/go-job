@@ -7,7 +7,7 @@ type Application struct {
 	Data    Data
 	MySQL   MySQL
 	Redis   Redis
-	SMTP    SMTP
+	SMTP    map[string]SMTPProvider `mapstructure:"smtp"`
 	Metrics Metrics
 }
 
@@ -39,7 +39,11 @@ type Redis struct {
 	DB   int    `mapstructure:"db"`
 }
 
-type SMTP struct {
+//type SMTP struct {
+//	Provider map[string]SMTPProvider `mapstructure:"smtp"`
+//}
+
+type SMTPProvider struct {
 	Sender   string `mapstructure:"sender"`
 	Key      string `mapstructure:"key"`
 	SMTPHost string `mapstructure:"smtp_host"`

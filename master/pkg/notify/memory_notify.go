@@ -3,6 +3,7 @@ package notify
 import (
 	"context"
 	"fmt"
+	ifaceEmail "go-job/internal/iface/email"
 	"go-job/internal/model"
 	"go-job/internal/pkg/email"
 	"log/slog"
@@ -22,7 +23,7 @@ type MemoryNotifyStore struct {
 	queue     chan NotifyUnit      // 需要的队列
 	workerNum int                  // worker数量
 
-	emailSvc email.IEmailService // 邮件发送服务
+	emailSvc ifaceEmail.IEmailService // 邮件发送服务
 }
 
 // Set 添加一个任务的通知配置
@@ -114,7 +115,7 @@ func (m *MemoryNotifyStore) generateSubject(name, status string) string {
 	return fmt.Sprintf("任务: %s, 状态: %s", name, status)
 }
 
-func newMemoryNotifyStore(workerNum int, emailSvc email.IEmailService) INotifyStore {
+func newMemoryNotifyStore(workerNum int, emailSvc ifaceEmail.IEmailService) INotifyStore {
 	return &MemoryNotifyStore{
 		notifyMap: make(map[int]NotifyConfig),
 		queue:     make(chan NotifyUnit, 1024),
@@ -123,7 +124,7 @@ func newMemoryNotifyStore(workerNum int, emailSvc email.IEmailService) INotifySt
 	}
 }
 
-func InitMemoryNotifyStore(emailSvc email.IEmailService) INotifyStore {
+func InitMemoryNotifyStore(emailSvc ifaceEmail.IEmailService) INotifyStore {
 	onceMemory.Do(func() {
 		if emailSvc == nil {
 			slog.Error("emailSvc is nil")
