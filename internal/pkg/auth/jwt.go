@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/golang-jwt/jwt/v5"
 	"go-job/internal/model"
-	"go-job/master/pkg/config"
+	"go-job/internal/pkg/consts"
 	"time"
 )
 
@@ -18,42 +18,38 @@ var (
 	ErrorTokenIsNil   = errors.New("token is nil")
 )
 
-type Option func(builder *JwtBuilder)
-
 type JwtBuilder struct {
-	key        []byte
-	expireTime time.Duration // 过期时间，单位秒
+	key []byte
 }
 
-func NewJwtBuilder(key string, opts ...Option) *JwtBuilder {
+func NewJwtBuilder(key string) *JwtBuilder {
 	builder := &JwtBuilder{
-		expireTime: defaultExpireTime,
-		key:        []byte(key),
-	}
-	for _, opt := range opts {
-		opt(builder)
+		key: []byte(key),
 	}
 	return builder
 }
 
-func WithExpireTime(expireTime time.Duration) Option {
-	return func(builder *JwtBuilder) {
-		if expireTime > 0 {
-			builder.expireTime = expireTime
-		}
+// GenerateToken 生成jwt token
+// 注意：过期时间是由调用者设置的
+func (builder *JwtBuilder) GenerateToken(claims jwt.Claims) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+	tokenStr, err := token.SignedString(builder.key)
+	if err != nil {
+		return "", err
 	}
+	return tokenStr, nil
 }
 
-// GenerateToken 生成jwt token
-func (builder *JwtBuilder) GenerateToken(user model.DomainUser) (string, error) {
+// GenerateUserToken 生成用户登录的jwt token
+func (builder *JwtBuilder) GenerateUserToken(user model.DomainUser) (string, error) {
 	uc := model.UserClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(builder.expireTime)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(consts.DefaultLoginJwtExpireTime)),
 		},
 		Uid: user.Id,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
-	tokenStr, err := token.SignedString([]byte(builder.key))
+	tokenStr, err := token.SignedString(builder.key)
 	if err != nil {
 		return "", err
 	}
@@ -61,9 +57,9 @@ func (builder *JwtBuilder) GenerateToken(user model.DomainUser) (string, error) 
 }
 
 // ParseToken 解析jwt token
-func (builder *JwtBuilder) ParseToken(uc *model.UserClaims, tokenStr string) (*jwt.Token, error) {
-	token, err := jwt.ParseWithClaims(tokenStr, uc, func(token *jwt.Token) (interface{}, error) {
-		return []byte(config.App.Server.Key), nil
+func (builder *JwtBuilder) ParseToken(claims jwt.Claims, tokenStr string) (*jwt.Token, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+		return builder.key, nil
 	})
 	if err != nil {
 		return nil, ErrorTokenInvalid
@@ -72,8 +68,4 @@ func (builder *JwtBuilder) ParseToken(uc *model.UserClaims, tokenStr string) (*j
 		return nil, ErrorTokenExpired
 	}
 	return token, nil
-}
-
-func (builder *JwtBuilder) GetExpireTime() time.Duration {
-	return builder.expireTime
 }

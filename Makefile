@@ -85,3 +85,9 @@ build-node-py-image:
 		cp node/Dockerfile . && \
 		docker build -t $(NODE_IMAGE) . -f Dockerfile
 	@echo ">>> 镜像构建完成: $(NODE_IMAGE)"
+
+
+.PHONY:
+set-env:
+	export workspace="D:\MyProjects\go-job"
+

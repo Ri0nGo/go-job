@@ -1,5 +1,9 @@
 package model
 
+/*
+todo 后续需要把这些常量定义迁移到具体的model文件中
+*/
+
 type ExecType uint8
 
 const (

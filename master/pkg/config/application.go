@@ -7,7 +7,8 @@ type Application struct {
 	Data    Data
 	MySQL   MySQL
 	Redis   Redis
-	SMTP    map[string]SMTPProvider `mapstructure:"smtp"`
+	SMTP    map[string]SMTPProvider   `mapstructure:"smtp"`
+	OAuth2  map[string]OAuth2Provider `mapstructure:"oauth2"`
 	Metrics Metrics
 }
 
@@ -57,4 +58,10 @@ type Metrics struct {
 type NodeMetric struct {
 	Interval int `mapstructure:"interval"`
 	Timeout  int `mapstructure:"timeout"`
+}
+
+type OAuth2Provider struct {
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
+	RedirectURL  string `mapstructure:"redirect_url"`
 }

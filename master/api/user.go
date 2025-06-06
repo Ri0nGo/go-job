@@ -5,9 +5,11 @@ import (
 	"errors"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"go-job/internal/dto"
 	"go-job/internal/model"
 	"go-job/internal/pkg/auth"
+	"go-job/internal/pkg/consts"
 	"go-job/internal/pkg/utils"
 	"go-job/master/pkg/config"
 	"go-job/master/repo/cache"
@@ -15,6 +17,7 @@ import (
 	"gorm.io/gorm"
 	"log/slog"
 	"strconv"
+	"time"
 )
 
 const (
@@ -185,7 +188,7 @@ func (a *UserApi) Login(ctx *gin.Context) {
 	domainUser, err := a.userService.Login(req.Username, req.Password)
 	switch err {
 	case nil:
-		token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateToken(domainUser)
+		token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateToken(a.userDomainToClaim(domainUser))
 		if err != nil {
 			slog.Error("create token err", "err", err)
 			dto.NewJsonResp(ctx).Fail(dto.ServerError)
@@ -303,4 +306,14 @@ func GetUserClaim(ctx *gin.Context) (*model.UserClaims, error) {
 		return nil, errors.New("assert user claims failed")
 	}
 	return uc, nil
+}
+
+func (a *UserApi) userDomainToClaim(user model.DomainUser) model.UserClaims {
+	uc := model.UserClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(consts.DefaultLoginJwtExpireTime)),
+		},
+		Uid: user.Id,
+	}
+	return uc
 }

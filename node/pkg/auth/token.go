@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"github.com/golang-jwt/jwt/v5"
 	"go-job/internal/model"
 	"go-job/internal/pkg/auth"
 	"time"
@@ -9,6 +10,7 @@ import (
 const (
 	defaultExpireTime       = time.Hour * 2
 	defaultRefreshTimeLimit = time.Minute * 5
+	defaultJwtExpireTime    = time.Hour * 2
 	defaultUserId           = -1
 )
 
@@ -19,8 +21,11 @@ const (
 //	Uid: defaultUserId,
 //}
 
-var uc = model.DomainUser{
-	Id: defaultUserId,
+var uc = model.UserClaims{
+	RegisteredClaims: jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(defaultJwtExpireTime)),
+	},
+	Uid: defaultUserId,
 }
 
 type JwtToken struct {

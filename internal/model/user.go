@@ -2,7 +2,23 @@ package model
 
 import (
 	"github.com/golang-jwt/jwt/v5"
+	"strconv"
 	"time"
+)
+
+type AuthType uint8
+
+func (a AuthType) String() string {
+	switch a {
+	case AuthTypeGithub:
+		return "github"
+	default:
+		return "unknown(" + strconv.Itoa(int(a)) + ")"
+	}
+}
+
+const (
+	AuthTypeGithub AuthType = iota + 1
 )
 
 type User struct {
@@ -28,6 +44,7 @@ type DomainUser struct {
 	About       string    `json:"about"`
 	Email       string    `json:"email"`
 	CreatedTime time.Time `json:"created_time"`
+	UpdateTime  time.Time `json:"updateTime"`
 }
 
 func (u *DomainUser) TableName() string {
@@ -37,4 +54,18 @@ func (u *DomainUser) TableName() string {
 type UserClaims struct {
 	jwt.RegisteredClaims
 	Uid int `json:"uid"`
+}
+
+type AuthIdentity struct {
+	ID          int       `json:"id" gorm:"primary_key"` // 自增id
+	UserID      int       `json:"user_id"`               // 用户ID， 一对多关系
+	Type        AuthType  `json:"type"`                  // 授权类型 1: github
+	Identity    string    `json:"identity"`              // 授权唯一标识
+	Name        string    `json:"name"`                  // 授权平台的用户名
+	CreatedTime time.Time `json:"created_at" gorm:"column:created_time;autoCreateTime"`
+	UpdatedTime time.Time `json:"updated_at" gorm:"column:updated_time;autoUpdateTime"`
+}
+
+func (a *AuthIdentity) TableName() string {
+	return "auth_identity"
 }

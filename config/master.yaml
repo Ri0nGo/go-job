@@ -39,3 +39,10 @@ metrics:
   node:
     interval: 10
     timeout: 2
+
+
+oauth2:
+  github:
+    client_id: xx
+    client_secret: xx
+    redirect_url: xx

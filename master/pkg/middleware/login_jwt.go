@@ -6,7 +6,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"go-job/internal/model"
 	"go-job/internal/pkg/auth"
-	"go-job/master/pkg/config"
+	"go-job/internal/pkg/consts"
 	"log/slog"
 	"net/http"
 	"time"
@@ -61,7 +61,7 @@ func (b *LoginJwtMWBuilder) Builder() gin.HandlerFunc {
 
 		// 检测token是否需要刷新
 		if uc.ExpiresAt.Sub(time.Now()) < defaultRefreshJwtTime {
-			jwtToken, err := b.updateJwtToken(jwtBuilder.GetExpireTime(), token, uc)
+			jwtToken, err := b.updateJwtToken(consts.DefaultLoginJwtExpireTime, token, uc)
 			ctx.Header("Authorization", jwtToken)
 			if err != nil {
 				slog.Error("update jwt token error", "err", err, "token", jwtToken)
@@ -75,7 +75,7 @@ func (b *LoginJwtMWBuilder) Builder() gin.HandlerFunc {
 
 func (b *LoginJwtMWBuilder) updateJwtToken(expireTime time.Duration, token *jwt.Token, uc *model.UserClaims) (string, error) {
 	uc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(expireTime))
-	newToken, err := token.SignedString([]byte(config.App.Server.Key))
+	newToken, err := token.SignedString(b.key)
 	if err != nil {
 		return "", err
 	}

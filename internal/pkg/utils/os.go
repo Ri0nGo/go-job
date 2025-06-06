@@ -26,3 +26,8 @@ func ErrorToString(err error) string {
 	}
 	return ""
 }
+
+func GetMasterConfigPath() string {
+	root := os.Getenv("WORKSPACE")
+	return fmt.Sprintf("%s/config/master-prod.yaml", root)
+}
