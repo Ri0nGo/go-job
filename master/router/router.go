@@ -10,7 +10,8 @@ func NewWebRouter(mdls []gin.HandlerFunc,
 	jobRecordApi *api.JobRecordApi,
 	nodeApi *api.NodeApi,
 	userApi *api.UserApi,
-	dashboardApi *api.DashboardApi) *gin.Engine {
+	dashboardApi *api.DashboardApi,
+	oauth2Api *api.OAuth2Api) *gin.Engine {
 	server := gin.Default()
 	server.Use(mdls...)
 	group := server.Group("/api/go-job")
@@ -19,5 +20,6 @@ func NewWebRouter(mdls []gin.HandlerFunc,
 	nodeApi.RegisterRoutes(group)
 	userApi.RegisterRoutes(group)
 	dashboardApi.RegisterRoutes(group)
+	oauth2Api.RegisterRoutes(group)
 	return server
 }

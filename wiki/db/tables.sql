@@ -76,3 +76,16 @@ CREATE TABLE `user` (
     UNIQUE KEY `idx_uniq_username` (`username`),
     UNIQUE KEY `idx_uniq_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- 身份认证表
+CREATE TABLE `go-job`.`无标题`  (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `user_id` int NOT NULL,
+    `type` smallint NOT NULL COMMENT '授权类型, 1:github',
+    `identity` varchar(128) NOT NULL COMMENT '身份标识',
+    `name` varchar(128) NULL COMMENT '授权平台的用户名',
+    `created_time` datetime NULL,
+    `updated_time` datetime NULL,
+    PRIMARY KEY (`id`),
+    INDEX `idx_type_identity`(`type`, `identity`) COMMENT '类型和身份标识唯一'
+);

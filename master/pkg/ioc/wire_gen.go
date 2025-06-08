@@ -45,7 +45,8 @@ func InitWebServer() *WebContainer {
 	userApi := api.NewUserApi(iUserService, iEmailCodeService)
 	iDashboardService := service.NewDashboardService(iJobRepo, iJobRecordRepo)
 	dashboardApi := api.NewDashboardApi(iDashboardService)
-	engine := router.NewWebRouter(v, jobApi, jobRecordApi, nodeApi, userApi, dashboardApi)
+	oAuth2Api := api.NewOAuth2Api(iUserService)
+	engine := router.NewWebRouter(v, jobApi, jobRecordApi, nodeApi, userApi, dashboardApi, oAuth2Api)
 	webContainer := &WebContainer{
 		Engine:      engine,
 		MysqlDB:     db,

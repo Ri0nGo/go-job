@@ -55,6 +55,7 @@ func InitWebServer() *WebContainer {
 		api.NewNodeApi,
 		api.NewUserApi,
 		api.NewDashboardApi,
+		api.NewOAuth2Api,
 
 		// web
 		middleware.NewGinMiddlewares,

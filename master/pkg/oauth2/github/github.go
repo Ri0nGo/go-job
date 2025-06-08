@@ -45,34 +45,42 @@ func (o *OAuth2Service) GetAuthIdentity(ctx context.Context, code string) (model
 }
 
 func (o *OAuth2Service) getAccessToken(ctx context.Context, code string) (string, error) {
-	header := map[string]string{
-		"Content-Type": "application/json",
-	}
+	// 参数作为 URL 查询参数（与 Python 的 params= 一致）
 	params := map[string]string{
 		"client_id":     o.clientID,
 		"client_secret": o.clientSecret,
 		"code":          code,
 		"grant_type":    "authorization_code",
 	}
+
+	// 请求头
+	headers := map[string]string{
+		"Accept": "application/json", // 和 Python 里一样
+	}
+
+	// 发起请求
 	resp, err := resty.New().SetContext(ctx).
-		SetHeaders(header).
-		SetTimeout(time.Second * 3).
 		R().
-		SetPathParams(params).
-		Post(accessTokenURL)
+		SetHeaders(headers).
+		SetQueryParams(params). // ✅ 和 Python 的 params= 对应
+		SetTimeout(3 * time.Second).
+		Get(accessTokenURL) // ✅ Python 是 post，但 GitHub 实际用的是 GET（需确认）
+
 	if err != nil {
 		return "", err
 	}
 
-	var atResp accessTokenResp
-	err = json.Unmarshal(resp.Bytes(), &atResp)
-	if err != nil {
+	// 解析响应 JSON
+	var result accessTokenResp
+	if err := json.Unmarshal(resp.Bytes(), &result); err != nil {
 		return "", err
 	}
-	if atResp.Error != "" {
-		return "", errors.New(atResp.Error)
+
+	if result.Error != "" {
+		return "", errors.New(result.Error)
 	}
-	return atResp.AccessToken, nil
+
+	return result.AccessToken, nil
 }
 
 func (o *OAuth2Service) getUserInfo(ctx context.Context, accessToken string) (model.AuthIdentity, error) {

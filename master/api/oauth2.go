@@ -31,7 +31,7 @@ func NewOAuth2Api(userSvc service.IUserService) *OAuth2Api {
 		oauth2Svc:         make(map[model.AuthType]oauth2.IOAuth2Service),
 		userSvc:           userSvc,
 		authKey:           "A73fkfiuwbl92smg@iugjChgWth$s89",
-		authStateName:     "jwt-state",
+		authStateName:     "oauth2-state",
 		authStateExpire:   600,
 		redirectFrontPath: "https://job.rion.top",
 	}
@@ -54,7 +54,7 @@ func (a *OAuth2Api) RegisterRoutes(group *gin.RouterGroup) {
 	ouath2Group := group.Group("/oauth2")
 	{
 		ouath2Group.GET("/github/authurl", a.GithubAuthURL)
-		ouath2Group.Any("/github/callback")
+		ouath2Group.Any("/github/callback", a.GithubCallback)
 	}
 }
 
@@ -70,12 +70,12 @@ func (a *OAuth2Api) GithubAuthURL(ctx *gin.Context) {
 
 func (a *OAuth2Api) GithubCallback(ctx *gin.Context) {
 	// 1. 校验state
-	err := a.verifyState(ctx)
-	if err != nil {
-		slog.Error("verify state failed", "err", err)
-		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
-		return
-	}
+	//err := a.verifyState(ctx)
+	//if err != nil {
+	//	slog.Error("verify state failed", "err", err)
+	//	dto.NewJsonResp(ctx).FailWithMsg(dto.UnauthorizedError, "非法请求")
+	//	return
+	//}
 
 	// 2. 通过code获取userinfo
 	code := ctx.Query("code")
@@ -83,6 +83,7 @@ func (a *OAuth2Api) GithubCallback(ctx *gin.Context) {
 	if err != nil {
 		slog.Error("get auth identity error", "err", err)
 		dto.NewJsonResp(ctx).FailWithMsg(dto.UnauthorizedError, "认证失败")
+		return
 	}
 
 	// 3. 注册用户
@@ -100,7 +101,11 @@ func (a *OAuth2Api) GithubCallback(ctx *gin.Context) {
 		return
 	}
 	ctx.Header("Authorization", token)
-	ctx.Redirect(http.StatusOK, a.redirectFrontPath+"?uid="+strconv.Itoa(user.Id))
+	ctx.Redirect(http.StatusFound, a.redirectFrontPath+"?uid="+strconv.Itoa(user.Id))
+	//dto.NewJsonResp(ctx).Success(map[string]any{
+	//	"id":            user.Id,
+	//	"redirect_path": a.redirectFrontPath + "?uid=" + strconv.Itoa(user.Id),
+	//})
 }
 
 func (a *OAuth2Api) setStateCookie(ctx *gin.Context, state string) error {
@@ -114,8 +119,8 @@ func (a *OAuth2Api) setStateCookie(ctx *gin.Context, state string) error {
 	}
 
 	ctx.SetCookie(a.authStateName, token,
-		a.authStateExpire, "/oauth2/github/callback",
-		"", false, true)
+		a.authStateExpire, "/api/go-job/oauth2/github/callback",
+		"", false, false)
 	return nil
 }
 

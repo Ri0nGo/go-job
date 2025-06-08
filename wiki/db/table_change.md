@@ -45,3 +45,19 @@ CREATE INDEX idx_job_id ON job_record(job_id);
 CREATE INDEX idx_status ON job_record(status);
 ```
 
+
+## 2025-06-08 新增身份认证表
+
+```sql
+CREATE TABLE `auth_identity` (
+     `id` int NOT NULL AUTO_INCREMENT,
+     `user_id` int NOT NULL,
+     `type` smallint NOT NULL COMMENT '授权类型, 1:github',
+     `identity` varchar(128) NOT NULL COMMENT '身份标识',
+     `name` varchar(128) DEFAULT NULL COMMENT '授权平台的用户名',
+     `created_time` datetime DEFAULT NULL,
+     `updated_time` datetime DEFAULT NULL,
+     PRIMARY KEY (`id`),
+     KEY `idx_type_identity` (`type`,`identity`) COMMENT '类型和身份标识唯一'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
