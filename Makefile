@@ -17,6 +17,10 @@ MASTER_IMAGE := $(MASTER_IMAGE_NAME):$(VERSION)
 NODE_IMAGE_NAME := go-job-node
 NODE_IMAGE := $(NODE_IMAGE_NAME):$(VERSION)
 
+# git
+COMMIT_FILE=last_commit.txt
+CUR_DIR := $(CURDIR)
+
 
 .PHONY: run-n
 run-n:
@@ -82,6 +86,21 @@ build-node-py-image:
 	@rm -rf $(BUILD_DIR)
 	@git clone git@github.com:Ri0nGo/go-job.git $(BUILD_DIR)
 	@cd $(BUILD_DIR) && \
+		if [ -f $(CUR_DIR)/$(COMMIT_FILE) ]; then \
+					echo ">>> 本次构建的 Git 提交记录如下：" && \
+			git log --date=format:'%Y-%m-%d %H:%M:%S' \
+					--pretty=format:"%h|%an|%ad|%s" `cat $(CUR_DIR)/$(COMMIT_FILE)`..HEAD | \
+			while IFS="|" read -r hash author date msg; do \
+					printf "%-10s %-15s %-20s %s\n" "$$hash" "$$author" "$$date" "$$msg"; \
+			done; \
+		else \
+			echo ">>> 未找到提交记录文件 $(COMMIT_FILE)，显示最近 3 条提交：" && \
+			git log -n 4 --date=format:'%Y-%m-%d %H:%M:%S' \
+					--pretty=format:"%h|%an|%ad|%s" | \
+			while IFS="|" read -r hash author date msg; do \
+					printf "%-10s %-15s %-20s %s\n" "$$hash" "$$author" "$$date" "$$msg"; \
+			done; \
+		fi && \
 		cp node/Dockerfile . && \
 		docker build -t $(NODE_IMAGE) . -f Dockerfile
 	@echo ">>> 镜像构建完成: $(NODE_IMAGE)"
