@@ -46,3 +46,9 @@ oauth2:
     client_id: xx
     client_secret: xx
     redirect_url: xx
+    redirect_front_url: xx  # todo 这里后续要优化
+  qq:
+    client_id: xx
+    client_secret: xx
+    redirect_url: xx
+    redirect_front_url: xx  # todo 这里后续要优化

@@ -11,10 +11,10 @@ import (
 	"go-job/internal/pkg/auth"
 	"go-job/master/pkg/config"
 	"go-job/master/pkg/oauth2/github"
+	"go-job/master/pkg/oauth2/qq"
 	"go-job/master/service"
 	"log/slog"
 	"net/http"
-	"strconv"
 )
 
 type OAuth2Api struct {
@@ -33,7 +33,7 @@ func NewOAuth2Api(userSvc service.IUserService) *OAuth2Api {
 		authKey:           "A73fkfiuwbl92smg@iugjChgWth$s89",
 		authStateName:     "oauth2-state",
 		authStateExpire:   600,
-		redirectFrontPath: "https://job.rion.top",
+		redirectFrontPath: config.App.OAuth2[model.AuthTypeGithub.String()].RedirectFrontUrl,
 	}
 
 	oa.registryOAuth2Svc()
@@ -47,6 +47,13 @@ func (a *OAuth2Api) registryOAuth2Svc() {
 		config.App.OAuth2[model.AuthTypeGithub.String()].ClientSecret,
 		config.App.OAuth2[model.AuthTypeGithub.String()].RedirectURL,
 	)
+
+	// 注册qq
+	a.oauth2Svc[model.AuthTypeQQ] = qq.NewOAuth2Service(
+		config.App.OAuth2[model.AuthTypeQQ.String()].ClientID,
+		config.App.OAuth2[model.AuthTypeQQ.String()].ClientSecret,
+		config.App.OAuth2[model.AuthTypeQQ.String()].RedirectURL,
+	)
 }
 
 // RegisterRoutes 注册用户模块路由
@@ -55,8 +62,13 @@ func (a *OAuth2Api) RegisterRoutes(group *gin.RouterGroup) {
 	{
 		ouath2Group.GET("/github/authurl", a.GithubAuthURL)
 		ouath2Group.Any("/github/callback", a.GithubCallback)
+
+		ouath2Group.GET("/qq/authurl", a.QQAuthURL)
+		ouath2Group.Any("/qq/callback", a.QQCallback)
 	}
 }
+
+// ---------------- github ---------------- //
 
 func (a *OAuth2Api) GithubAuthURL(ctx *gin.Context) {
 	state := uuid.New()
@@ -100,12 +112,10 @@ func (a *OAuth2Api) GithubCallback(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.ServerError)
 		return
 	}
-	ctx.Header("Authorization", token)
-	ctx.Redirect(http.StatusFound, a.redirectFrontPath+"?uid="+strconv.Itoa(user.Id))
-	//dto.NewJsonResp(ctx).Success(map[string]any{
-	//	"id":            user.Id,
-	//	"redirect_path": a.redirectFrontPath + "?uid=" + strconv.Itoa(user.Id),
-	//})
+
+	redirectFullPath := fmt.Sprintf("%s?t=%s&uid=%d", a.redirectFrontPath, token, user.Id)
+	slog.Info("redirectFullPath: " + redirectFullPath)
+	ctx.Redirect(http.StatusFound, redirectFullPath)
 }
 
 func (a *OAuth2Api) setStateCookie(ctx *gin.Context, state string) error {
@@ -139,6 +149,22 @@ func (a *OAuth2Api) verifyState(ctx *gin.Context) error {
 		return fmt.Errorf("state different, receive state: %s, jwt state: %s", state, sc.State)
 	}
 	return nil
+}
+
+// ---------------- qq ---------------- //
+
+func (a *OAuth2Api) QQAuthURL(ctx *gin.Context) {
+	state := uuid.New()
+	authUrl := a.oauth2Svc[model.AuthTypeQQ].GetAuthUrl(ctx, state)
+	err := a.setStateCookie(ctx, state)
+	if err != nil {
+		dto.NewJsonResp(ctx).Fail(dto.ServerError)
+	}
+	dto.NewJsonResp(ctx).Success(authUrl)
+}
+
+func (a *OAuth2Api) QQCallback(ctx *gin.Context) {
+	dto.NewJsonResp(ctx).Success()
 }
 
 type StateClaims struct {

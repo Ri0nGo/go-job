@@ -12,6 +12,8 @@ func (a AuthType) String() string {
 	switch a {
 	case AuthTypeGithub:
 		return "github"
+	case AuthTypeQQ:
+		return "qq"
 	default:
 		return "unknown(" + strconv.Itoa(int(a)) + ")"
 	}
@@ -19,6 +21,7 @@ func (a AuthType) String() string {
 
 const (
 	AuthTypeGithub AuthType = iota + 1
+	AuthTypeQQ
 )
 
 type User struct {

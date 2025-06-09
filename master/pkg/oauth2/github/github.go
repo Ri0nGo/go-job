@@ -59,12 +59,12 @@ func (o *OAuth2Service) getAccessToken(ctx context.Context, code string) (string
 	}
 
 	// 发起请求
-	resp, err := resty.New().SetContext(ctx).
+	resp, err := resty.New().
 		R().
 		SetHeaders(headers).
-		SetQueryParams(params). // ✅ 和 Python 的 params= 对应
-		SetTimeout(3 * time.Second).
-		Get(accessTokenURL) // ✅ Python 是 post，但 GitHub 实际用的是 GET（需确认）
+		SetQueryParams(params).
+		SetTimeout(time.Second * 5).
+		Post(accessTokenURL)
 
 	if err != nil {
 		return "", err
@@ -88,9 +88,9 @@ func (o *OAuth2Service) getUserInfo(ctx context.Context, accessToken string) (mo
 		"Authorization": "Bearer " + accessToken,
 		"Content-Type":  "application/json",
 	}
-	resp, err := resty.New().SetContext(ctx).
+	resp, err := resty.New().
 		SetHeaders(header).
-		SetTimeout(time.Second * 3).
+		SetTimeout(time.Second * 5).
 		R().
 		Get(userInfoURL)
 	if err != nil {

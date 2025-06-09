@@ -61,7 +61,8 @@ type NodeMetric struct {
 }
 
 type OAuth2Provider struct {
-	ClientID     string `mapstructure:"client_id"`
-	ClientSecret string `mapstructure:"client_secret"`
-	RedirectURL  string `mapstructure:"redirect_url"`
+	ClientID         string `mapstructure:"client_id"`     // 泛指ID，可以是APPID
+	ClientSecret     string `mapstructure:"client_secret"` // 泛指Secret, 可以是APPKey
+	RedirectURL      string `mapstructure:"redirect_url"`
+	RedirectFrontUrl string `mapstructure:"redirect_front_url"`
 }

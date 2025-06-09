@@ -22,6 +22,8 @@ func NewGinMiddlewares(cmd redis.Cmdable) []gin.HandlerFunc {
 			"/api/go-job/users/login",
 			"/api/go-job/oauth2/github/authurl",
 			"/api/go-job/oauth2/github/callback",
+			"/api/go-job/oauth2/qq/authurl",
+			"/api/go-job/oauth2/qq/callback",
 		}).Builder(),
 		iplimiter.NewIpLimiter(redisLimiter).Builder(),
 	}
