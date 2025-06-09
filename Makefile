@@ -95,6 +95,7 @@ build-node-py-image:
 			done; \
 		else \
 			echo ">>> 未找到提交记录文件 $(COMMIT_FILE)，显示最近 3 条提交：" && \
+			git rev-parse HEAD > $(CUR_DIR)/$(COMMIT_FILE); \
 			git log -n 4 --date=format:'%Y-%m-%d %H:%M:%S' \
 					--pretty=format:"%h|%an|%ad|%s" | \
 			while IFS="|" read -r hash author date msg; do \
@@ -104,6 +105,17 @@ build-node-py-image:
 		cp node/Dockerfile . && \
 		docker build -t $(NODE_IMAGE) . -f Dockerfile
 	@echo ">>> 镜像构建完成: $(NODE_IMAGE)"
+
+	# 此处的镜像仓库可以自己修改
+	@echo ">>> 开始推送镜像到阿里云镜像仓库: $(REMOTE_MASTER_IMAGE)"
+	@docker tag $(MASTER_IMAGE) $(REMOTE_MASTER_IMAGE)
+	@docker push $(REMOTE_MASTER_IMAGE)
+	@echo ">>> 镜像推送完成: $(REMOTE_MASTER_IMAGE)"
+
+	# 添加秘钥自动部署 （可选）#
+	@echo ">>> 开始更新阿里云容器镜像"
+	@ssh root@$(SERVER_IP) 'set -e; cd /root/shell/images-shell && make dpi-go-job-master version=$(VERSION) GJC=/root/shell/init/go-job/compose.yaml'
+	@echo ">>> 阿里云容器镜像更新完成"
 
 
 .PHONY:
