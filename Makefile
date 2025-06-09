@@ -122,3 +122,74 @@ build-node-py-image:
 set-env:
 	export workspace="D:\MyProjects\go-job"
 
+
+#############################################
+#		仅供参考								#
+#		此处为服务器拉取镜像仓库脚本				#
+#############################################
+
+GO_JOB_ADMIN_IMAGE_NAME := xxx
+GO_JOB_MASTER_IMAGE_NAME := xxx
+GO_JOB_NODE_PY_IMAGE_NAME := xxx
+
+REGISTRY := xxx
+
+
+.PHONY: help dpi-go-job-node dpi-go-job-master
+
+### 显示所有可用命令
+help:
+        @echo "可用命令如下："
+        @grep -E '^[a-zA-Z0-9_-]+:' Makefile | awk -F: '{ \
+                target=$$1; \
+                printf "  %-25s\t拉取镜像; eg. make %s version=img_version\n", target, target; \
+        }'
+
+
+### 拉取 go-job node 镜像; eg. make dpi-go-job-master version=img_version
+dpi-go-job-node:
+        @if [ -z "$(version)" ]; then \
+                echo "Error: tag is not set. Please run with: make build-node-py-image version=img_version"; \
+                exit 1; \
+        fi
+        @IMAGE=$(REGISTRY)/go-job-node:$(version); \
+        echo ">>> 拉取镜像: $$IMAGE"; \
+        docker pull $$IMAGE
+
+        @echo ">>> 开始更新 go-job-node tag: $(version)"
+        @sed -i 's#\(.*rion/go-job-node:\)[^"]*#\1$(version)#g' $$GJC
+        @docker compose  -f $$GJC  up -d --force-recreate $(GO_JOB_NODE_PY_IMAGE_NAME)
+        @echo ">>> 更新镜像完, 服务名: $(GO_JOB_NODE_PY_IMAGE_NAME)"
+
+### 拉取go-job master 镜像; eg. make dpi-go-job-master version=img_version
+dpi-go-job-master:
+        @if [ -z "$(version)" ]; then \
+                echo "Error: version is not set. Please run with: make dpi-go-job-master version=img_version"; \
+                exit 1; \
+        fi
+        @IMAGE=$(REGISTRY)/go-job-master:$(version); \
+        echo ">>> 拉取镜像: $$IMAGE"; \
+        docker pull $$IMAGE
+
+        @echo ">>> 开始更新 go-job-master tag: $(version)"
+        @sed -i 's#\(.*rion/go-job-master:\)[^"]*#\1$(version)#g' $$GJC
+        @docker compose  -f $$GJC  up -d --force-recreate $(GO_JOB_MASTER_IMAGE_NAME)
+        @echo ">>> 更新镜像完, 服务名: $(GO_JOB_MASTER_IMAGE_NAME)"
+
+
+### 拉取go-job admin 镜像; eg. make dpi-go-job-admin version=img_version
+dpi-go-job-admin:
+        @if [ -z "$(version)" ]; then \
+                echo "Error: version is not set. Please run with: make dpi-go-job-admin version=img_version"; \
+                exit 1; \
+        fi
+        @IMAGE=$(REGISTRY)/go-job-admin:$(version); \
+        echo ">>> 拉取镜像: $$IMAGE"; \
+        docker pull $$IMAGE
+
+        @echo ">>> 开始更新 go-job-admin tag: $(version)"
+        @sed -i 's#\(.*rion/go-job-admin:\)[^"]*#\1$(version)#g' $$GJC
+        @docker compose  -f $$GJC  up -d --force-recreate $(GO_JOB_ADMIN_IMAGE_NAME)
+        @echo ">>> 更新镜像完, 服务名: $(GO_JOB_ADMIN_IMAGE_NAME)"
+
+
