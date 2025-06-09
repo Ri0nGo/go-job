@@ -17,6 +17,9 @@ MASTER_IMAGE := $(MASTER_IMAGE_NAME):$(VERSION)
 NODE_IMAGE_NAME := go-job-node
 NODE_IMAGE := $(NODE_IMAGE_NAME):$(VERSION)
 
+# server
+SERVER_IP=xx.xx.xx.xx
+
 # git
 COMMIT_FILE=last_commit.txt
 CUR_DIR := $(CURDIR)
@@ -124,8 +127,8 @@ set-env:
 
 
 #############################################
-#		仅供参考								#
-#		此处为服务器拉取镜像仓库脚本				#
+#		仅供参考			    #
+#		此处为服务器拉取镜像仓库脚本   #
 #############################################
 
 GO_JOB_ADMIN_IMAGE_NAME := xxx
