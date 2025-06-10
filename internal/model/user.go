@@ -27,10 +27,10 @@ const (
 type User struct {
 	Id              int       `json:"id" gorm:"primary_key"`
 	Username        string    `json:"username"`
-	Password        string    `json:"password"`
-	Nickname        string    `json:"nickname"`
-	About           string    `json:"about"`
-	Email           string    `json:"email"`
+	Password        string    `json:"password" gorm:"omitempty"`
+	Nickname        string    `json:"nickname" gorm:"omitempty"`
+	About           string    `json:"about" gorm:"omitempty"`
+	Email           string    `json:"email" gorm:"omitempty"`
 	CreatedTime     time.Time `json:"created_at" gorm:"column:created_time;autoCreateTime"`
 	UpdatedTime     time.Time `json:"updated_at" gorm:"column:updated_time;autoUpdateTime"`
 	ConfirmPassword string    `json:"confirm_password" gorm:"-"`
