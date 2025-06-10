@@ -41,7 +41,6 @@ func (o *OAuth2Service) GetAuthUrl(ctx context.Context, state string) string {
 }
 
 func (o *OAuth2Service) GetAuthIdentity(ctx context.Context, code string) (model.AuthIdentity, error) {
-	// todo 待实现
 	accessToken, err := o.getAccessToken(ctx, code)
 	if err != nil {
 		return model.AuthIdentity{}, err
@@ -108,16 +107,16 @@ func (o *OAuth2Service) getOpenId(ctx context.Context, accessToken string) (stri
 }
 
 func (o *OAuth2Service) getUserInfo(ctx context.Context, accessToken, openId string) (model.AuthIdentity, error) {
-	header := map[string]string{
+	params := map[string]string{
 		"access_token":       accessToken,
 		"oauth_consumer_key": o.clientID,
 		"openid":             openId,
 		"fmt":                "json",
 	}
 	resp, err := resty.New().
-		SetHeaders(header).
-		SetTimeout(time.Second * 3).
 		R().
+		SetQueryParams(params).
+		SetTimeout(time.Second * 3).
 		Get(userInfoURL)
 	if err != nil {
 		return model.AuthIdentity{}, err
@@ -138,7 +137,7 @@ func (o *OAuth2Service) getUserInfo(ctx context.Context, accessToken, openId str
 
 type accessTokenResp struct {
 	AccessToken  string `json:"access_token"`
-	ExpiresIn    int    `json:"expires_in"`
+	ExpiresIn    string `json:"expires_in"`
 	RefreshToken string `json:"refresh_token"`
 	Scope        string `json:"scope"`
 	Error        string `json:"error"`
@@ -150,8 +149,9 @@ type openIdResp struct {
 }
 
 type userInfoResp struct {
-	Ret      int    `json:"ret"` // 状态码
-	Msg      string `json:"msg"`
-	IsLost   string `json:"is_lost"`
-	Nickname string `json:"nickname"`
+	Ret        int    `json:"ret"` // 状态码
+	Msg        string `json:"msg"`
+	Nickname   string `json:"nickname"`
+	Gender     string `json:"gender"`
+	GenderType int    `json:"gender_type"`
 }

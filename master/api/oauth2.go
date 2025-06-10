@@ -99,7 +99,7 @@ func (a *OAuth2Api) GithubCallback(ctx *gin.Context) {
 	}
 
 	// 3. 注册用户
-	user, err := a.userSvc.FindOrCreateByGithub(authModel)
+	user, err := a.userSvc.FindOrCreateByAuthIdentity(authModel)
 	if err != nil {
 		slog.Error("find or create user failed", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.ServerError)
@@ -164,7 +164,41 @@ func (a *OAuth2Api) QQAuthURL(ctx *gin.Context) {
 }
 
 func (a *OAuth2Api) QQCallback(ctx *gin.Context) {
-	dto.NewJsonResp(ctx).Success()
+	// 1. 校验state
+	//err := a.verifyState(ctx)
+	//if err != nil {
+	//	slog.Error("verify state failed", "err", err)
+	//	dto.NewJsonResp(ctx).FailWithMsg(dto.UnauthorizedError, "非法请求")
+	//	return
+	//}
+
+	// 2. 通过code获取userinfo
+	code := ctx.Query("code")
+	authModel, err := a.oauth2Svc[model.AuthTypeQQ].GetAuthIdentity(ctx, code)
+	if err != nil {
+		slog.Error("get auth identity error", "err", err)
+		dto.NewJsonResp(ctx).FailWithMsg(dto.UnauthorizedError, "认证失败")
+		return
+	}
+
+	// 3. 注册用户
+	user, err := a.userSvc.FindOrCreateByAuthIdentity(authModel)
+	if err != nil {
+		slog.Error("find or create qq user failed", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.ServerError)
+		return
+	}
+	// 4. 生成jwt token
+	token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateUserToken(user)
+	if err != nil {
+		slog.Error("generate jwt token failed", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.ServerError)
+		return
+	}
+
+	redirectFullPath := fmt.Sprintf("%s?t=%s&uid=%d", a.redirectFrontPath, token, user.Id)
+	slog.Info("redirectFullPath: " + redirectFullPath)
+	ctx.Redirect(http.StatusFound, redirectFullPath)
 }
 
 type StateClaims struct {

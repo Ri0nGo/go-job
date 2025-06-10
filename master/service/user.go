@@ -29,7 +29,7 @@ type IUserService interface {
 	UserBind(id int, email string) error
 
 	// oauth2
-	FindOrCreateByGithub(identity model.AuthIdentity) (model.DomainUser, error)
+	FindOrCreateByAuthIdentity(identity model.AuthIdentity) (model.DomainUser, error)
 }
 
 type UserService struct {
@@ -128,7 +128,7 @@ func (s *UserService) UserBind(id int, email string) error {
 	return err
 }
 
-func (s *UserService) FindOrCreateByGithub(authModel model.AuthIdentity) (model.DomainUser, error) {
+func (s *UserService) FindOrCreateByAuthIdentity(authModel model.AuthIdentity) (model.DomainUser, error) {
 	// 1. 查询之前是否登录过
 	user, err := s.UserRepo.QueryByAuth(authModel.Type, authModel.Identity)
 	switch err {
