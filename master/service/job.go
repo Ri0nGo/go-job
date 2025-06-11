@@ -157,7 +157,8 @@ func (j *JobService) AddJob(req dto.ReqJob) error {
 		return err
 	}
 	if job.Internal.Notify.NotifyType == model.NotifyTypeEmail &&
-		job.Internal.Notify.NotifyMark != user.Email {
+		user.Email != nil &&
+		job.Internal.Notify.NotifyMark != *user.Email {
 		return errors.New("请填写当前用户的邮箱")
 	}
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/go-sql-driver/mysql"
 	"go-job/internal/model"
+	"go-job/internal/pkg/utils"
 	"go-job/master/repo"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -52,7 +53,7 @@ func (s *UserService) userToDomainUser(user model.User) model.DomainUser {
 		Id:          user.Id,
 		Username:    user.Username,
 		Nickname:    user.Nickname,
-		Email:       user.Email,
+		Email:       utils.PtrToVal(user.Email),
 		CreatedTime: user.CreatedTime,
 		About:       user.About,
 	}
@@ -118,7 +119,7 @@ func (s *UserService) Login(username, password string) (model.DomainUser, error)
 }
 
 func (s *UserService) UserBind(id int, email string) error {
-	err := s.UserRepo.Update(model.User{Id: id, Email: email})
+	err := s.UserRepo.Update(model.User{Id: id, Email: &email})
 	if me, ok := err.(*mysql.MySQLError); ok {
 		const duplicateErr uint16 = 1062
 		if me.Number == duplicateErr {

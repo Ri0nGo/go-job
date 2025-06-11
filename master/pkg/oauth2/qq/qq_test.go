@@ -2,6 +2,7 @@ package qq
 
 import (
 	"context"
+	"fmt"
 	"go-job/internal/model"
 	"go-job/internal/pkg/utils"
 	"go-job/master/pkg/config"
@@ -33,4 +34,5 @@ func TestGetAccessToken(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	fmt.Println(info)
 }
