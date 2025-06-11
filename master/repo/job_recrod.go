@@ -13,9 +13,9 @@ type IJobRecordRepo interface {
 	Insert(*model.JobRecord) error
 	Delete(id int) error
 	QueryList(page model.Page, jobId int) (model.Page, error)
-	QueryLastList(page model.Page) (model.Page, error)
-	QueryDayStatus(begin, end time.Time) ([]model.JobRecordDayStatusCount, error)
-	QueryJobStatus(begin, end time.Time) ([]model.JobRecordJobStatusCount, error)
+	QueryLastListByUid(page model.Page, uid int) (model.Page, error)
+	QueryDayStatusByUid(begin, end time.Time, uid int) ([]model.JobRecordDayStatusCount, error)
+	QueryJobStatusByUid(begin, end time.Time, uid int) ([]model.JobRecordJobStatusCount, error)
 }
 
 type JobRecordRepo struct {
@@ -49,10 +49,10 @@ func (j *JobRecordRepo) QueryList(page model.Page, jobId int) (model.Page, error
 	})
 }
 
-func (j *JobRecordRepo) QueryDayStatus(being, end time.Time) ([]model.JobRecordDayStatusCount, error) {
+func (j *JobRecordRepo) QueryDayStatusByUid(being, end time.Time, uid int) ([]model.JobRecordDayStatusCount, error) {
 	var jobs []model.JobRecordDayStatusCount
 	err := j.mysqlDB.Model(&model.JobRecord{}).Select("DATE(start_time) AS date, status, COUNT(*) as count").
-		Where("start_time >= ? AND end_time <= ?", being, end).
+		Where("start_time >= ? AND end_time <= ? and user_id = ?", being, end, uid).
 		Group("date, status").
 		Order("date, status").
 		Find(&jobs).Error
@@ -62,10 +62,10 @@ func (j *JobRecordRepo) QueryDayStatus(being, end time.Time) ([]model.JobRecordD
 	return jobs, nil
 }
 
-func (j *JobRecordRepo) QueryJobStatus(being, end time.Time) ([]model.JobRecordJobStatusCount, error) {
+func (j *JobRecordRepo) QueryJobStatusByUid(being, end time.Time, uid int) ([]model.JobRecordJobStatusCount, error) {
 	var jobs []model.JobRecordJobStatusCount
 	err := j.mysqlDB.Model(&model.JobRecord{}).Select("job_id, status, COUNT(*) as count").
-		Where("start_time >= ? AND end_time <= ?", being, end).
+		Where("start_time >= ? AND end_time <= ? and user_id = ?", being, end, uid).
 		Group("job_id, status").
 		Order("job_id, status").
 		Find(&jobs).Error
@@ -75,12 +75,13 @@ func (j *JobRecordRepo) QueryJobStatus(being, end time.Time) ([]model.JobRecordJ
 	return jobs, nil
 }
 
-func (j *JobRecordRepo) QueryLastList(page model.Page) (model.Page, error) {
+func (j *JobRecordRepo) QueryLastListByUid(page model.Page, uid int) (model.Page, error) {
 	var jobs []model.JobLastRecord
 	err := j.mysqlDB.Table("job_record AS r").
 		Select("r.id, j.id AS job_id, j.name AS job_name, n.id AS node_id, n.name AS node_name, r.start_time, r.end_time, r.status").
 		Joins("JOIN job j ON r.job_id = j.id").
 		Joins("JOIN node n ON n.id = j.node_id").
+		Where("j.user_id = ?", uid).
 		Order("r.start_time DESC, r.id DESC").
 		Limit(page.PageSize).
 		Scan(&jobs).Error

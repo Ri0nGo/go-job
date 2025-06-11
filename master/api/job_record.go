@@ -78,7 +78,13 @@ func (a *JobRecordApi) GetJobRecordList(ctx *gin.Context) {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
-	list, err := a.JobRecordService.GetJobRecordList(req.Page, req.JobId)
+	uc, err := GetUserClaim(ctx)
+	if err != nil {
+		slog.Error("get user claim err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
+		return
+	}
+	list, err := a.JobRecordService.GetJobRecordList(req.Page, req.JobId, uc.Uid)
 	if err != nil {
 		slog.Error("get jobRecord list err:", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.JobRecordGetFailed)

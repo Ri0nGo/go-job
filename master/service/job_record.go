@@ -11,7 +11,7 @@ import (
 
 type IJobRecordService interface {
 	GetJobRecord(id int) (model.JobRecord, error)
-	GetJobRecordList(page model.Page, jobId int) (model.Page, error)
+	GetJobRecordList(page model.Page, jobId, uid int) (model.Page, error)
 	AddJobRecord(req model.CallbackJobResult) error
 	DeleteJobRecord(id int) error
 }
@@ -25,14 +25,14 @@ func (s *JobRecordService) GetJobRecord(id int) (model.JobRecord, error) {
 	return s.JobRecordRepo.QueryById(id)
 }
 
-func (s *JobRecordService) GetJobRecordList(page model.Page, jobId int) (model.Page, error) {
+func (s *JobRecordService) GetJobRecordList(page model.Page, jobId, uid int) (model.Page, error) {
 	if jobId == 0 {
 		if page.PageSize <= 0 {
 			page.PageSize = 20
 		} else if page.PageSize > 50 {
 			page.PageSize = 50
 		}
-		return s.JobRecordRepo.QueryLastList(page)
+		return s.JobRecordRepo.QueryLastListByUid(page, uid)
 	} else {
 		return s.JobRecordRepo.QueryList(page, jobId)
 	}

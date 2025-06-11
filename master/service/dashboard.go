@@ -16,7 +16,7 @@ var (
 
 type IDashboardService interface {
 	GetDataSummary(uid int) (dto.RespDashboardTotalData, error) // 卡片头部数据
-	GetChartData(req model.ReqDashboardChart) (map[string][]int, error)
+	GetChartData(req model.ReqDashboardChart, uid int) (map[string][]int, error)
 }
 
 type DashboardService struct {
@@ -69,16 +69,17 @@ func (s *DashboardService) GetDataSummary(uid int) (dto.RespDashboardTotalData, 
 	return data, nil
 }
 
-func (s *DashboardService) GetChartData(req model.ReqDashboardChart) (map[string][]int, error) {
+func (s *DashboardService) GetChartData(req model.ReqDashboardChart, uid int) (map[string][]int, error) {
 	beginTime := utils.TimestampToTime(req.Begin)
 	endTime := utils.TimestampToTime(req.End)
 	var result = make(map[string][]int)
 
 	switch req.Key {
 	case model.DashboardKeyJobStatus:
-		data, err := s.JobRecordRepo.QueryJobStatus(
+		data, err := s.JobRecordRepo.QueryJobStatusByUid(
 			utils.TimestampToTime(req.Begin),
-			utils.TimestampToTime(req.End))
+			utils.TimestampToTime(req.End),
+			uid)
 		if err != nil {
 			return result, err
 		}
@@ -113,9 +114,10 @@ func (s *DashboardService) GetChartData(req model.ReqDashboardChart) (map[string
 			result[beginTime.Format(time.DateOnly)] = []int{0, 0, 0, 0}
 			beginTime = beginTime.AddDate(0, 0, 1)
 		}
-		data, err := s.JobRecordRepo.QueryDayStatus(
+		data, err := s.JobRecordRepo.QueryDayStatusByUid(
 			utils.TimestampToTime(req.Begin),
-			utils.TimestampToTime(req.End))
+			utils.TimestampToTime(req.End),
+			uid)
 		if err != nil {
 			return result, err
 		}

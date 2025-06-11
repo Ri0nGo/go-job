@@ -45,14 +45,21 @@ func (a *DashboardApi) GetDashboardSummary(ctx *gin.Context) {
 	dto.NewJsonResp(ctx).Success(summary)
 }
 
-// GetDashboardList 查询节点列表
+// GetDashboardList 查询图表数据
 func (a *DashboardApi) GetDashboardChart(ctx *gin.Context) {
 	var req model.ReqDashboardChart
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return
 	}
-	data, err := a.dashboardService.GetChartData(req)
+	uc, err := GetUserClaim(ctx)
+	if err != nil {
+		slog.Error("get user claim err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
+		return
+	}
+
+	data, err := a.dashboardService.GetChartData(req, uc.Uid)
 	if err != nil {
 		slog.Error("get chart data error", err.Error())
 		if errors.Is(err, service.ErrUnSupportChartKey) {
