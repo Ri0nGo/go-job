@@ -51,8 +51,10 @@ func (j *JobRecordRepo) QueryList(page model.Page, jobId int) (model.Page, error
 
 func (j *JobRecordRepo) QueryDayStatusByUid(being, end time.Time, uid int) ([]model.JobRecordDayStatusCount, error) {
 	var jobs []model.JobRecordDayStatusCount
-	err := j.mysqlDB.Model(&model.JobRecord{}).Select("DATE(start_time) AS date, status, COUNT(*) as count").
-		Where("start_time >= ? AND end_time <= ? and user_id = ?", being, end, uid).
+	err := j.mysqlDB.Table("job_record AS t1").
+		Select("DATE(start_time) AS date, status, COUNT(*) as count").
+		Joins("JOIN job t2 ON t1.job_id = t2.id AND t2.user_id = ?", uid).
+		Where("start_time >= ? AND end_time <= ?", being, end).
 		Group("date, status").
 		Order("date, status").
 		Find(&jobs).Error
@@ -64,8 +66,10 @@ func (j *JobRecordRepo) QueryDayStatusByUid(being, end time.Time, uid int) ([]mo
 
 func (j *JobRecordRepo) QueryJobStatusByUid(being, end time.Time, uid int) ([]model.JobRecordJobStatusCount, error) {
 	var jobs []model.JobRecordJobStatusCount
-	err := j.mysqlDB.Model(&model.JobRecord{}).Select("job_id, status, COUNT(*) as count").
-		Where("start_time >= ? AND end_time <= ? and user_id = ?", being, end, uid).
+	err := j.mysqlDB.Table("job_record AS t1").
+		Select("job_id, status, COUNT(*) as count").
+		Joins("JOIN job t2 ON t1.job_id = t2.id AND t2.user_id = ?", uid).
+		Where("start_time >= ? AND end_time <= ?", being, end).
 		Group("job_id, status").
 		Order("job_id, status").
 		Find(&jobs).Error

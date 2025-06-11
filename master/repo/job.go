@@ -14,7 +14,6 @@ type IJobRepo interface {
 	Inserts([]model.Job) error
 	Update(*model.Job) error
 	Delete(id int) error
-	QueryList(page model.Page) (model.Page, error)
 	QueryListByUID(uid int, page model.Page) (model.Page, error)
 	QuerySummary(uid int) ([]model.JobStatusCount, error)
 }
@@ -70,10 +69,6 @@ func (j *JobRepo) QueryByNodeId(nodeId int) ([]model.Job, error) {
 	var jobs []model.Job
 	err := j.mysqlDB.Where("node_id = ?", nodeId).Find(&jobs).Error
 	return jobs, err
-}
-
-func (j *JobRepo) QueryList(page model.Page) (model.Page, error) {
-	return paginate.PaginateList[model.Job](j.mysqlDB, page)
 }
 
 func (j *JobRepo) QueryListByUID(uid int, page model.Page) (model.Page, error) {
