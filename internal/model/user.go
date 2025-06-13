@@ -24,6 +24,13 @@ const (
 	AuthTypeQQ
 )
 
+type Auth2Scene string
+
+const (
+	Auth2SceneLoginPage    Auth2Scene = "login_page"
+	Auth2SceneSettingsPage            = "settings_page"
+)
+
 type User struct {
 	Id              int       `json:"id" gorm:"primary_key"`
 	Username        string    `json:"username"`
@@ -71,4 +78,12 @@ type AuthIdentity struct {
 
 func (a *AuthIdentity) TableName() string {
 	return "auth_identity"
+}
+
+type OAuth2State struct {
+	State        string
+	Scene        Auth2Scene // 场景，表示从那个页面发起的操作
+	RedirectPage string
+	Platform     string
+	Used         bool
 }

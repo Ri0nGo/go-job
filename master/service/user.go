@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"github.com/go-sql-driver/mysql"
+	"github.com/rogpeppe/go-internal/cache"
 	"go-job/internal/model"
 	"go-job/internal/pkg/utils"
 	"go-job/master/repo"
@@ -35,6 +36,7 @@ type IUserService interface {
 
 type UserService struct {
 	UserRepo repo.IUserRepo
+	redisSvc cache.Cache
 }
 
 func (s *UserService) GetUser(id int) (model.DomainUser, error) {
