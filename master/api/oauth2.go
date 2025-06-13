@@ -31,7 +31,7 @@ func NewOAuth2Api(userSvc service.IUserService) *OAuth2Api {
 		oauth2Svc:         make(map[model.AuthType]oauth2.IOAuth2Service),
 		userSvc:           userSvc,
 		authKey:           "A73fkfiuwbl92smg@iugjChgWth$s89",
-		authStateName:     "oauth2-state",
+		authStateName:     "oauth2state",
 		authStateExpire:   600,
 		redirectFrontPath: config.App.OAuth2[model.AuthTypeGithub.String()].RedirectFrontUrl,
 	}
@@ -73,7 +73,7 @@ func (a *OAuth2Api) RegisterRoutes(group *gin.RouterGroup) {
 func (a *OAuth2Api) GithubAuthURL(ctx *gin.Context) {
 	state := uuid.New()
 	authUrl := a.oauth2Svc[model.AuthTypeGithub].GetAuthUrl(ctx, state)
-	err := a.setStateCookie(ctx, state)
+	err := a.setStateCookie(ctx, state, "/api/go-job/oauth2/github/callback")
 	if err != nil {
 		dto.NewJsonResp(ctx).Fail(dto.ServerError)
 	}
@@ -82,19 +82,19 @@ func (a *OAuth2Api) GithubAuthURL(ctx *gin.Context) {
 
 func (a *OAuth2Api) GithubCallback(ctx *gin.Context) {
 	// 1. 校验state
-	//err := a.verifyState(ctx)
-	//if err != nil {
-	//	slog.Error("verify state failed", "err", err)
-	//	dto.NewJsonResp(ctx).FailWithMsg(dto.UnauthorizedError, "非法请求")
-	//	return
-	//}
+	err := a.verifyState(ctx)
+	if err != nil {
+		slog.Error("verify github state failed", "err", err)
+		//ctx.Redirect(http.StatusFound, a.redirectFrontPath)
+		return
+	}
 
 	// 2. 通过code获取userinfo
 	code := ctx.Query("code")
 	authModel, err := a.oauth2Svc[model.AuthTypeGithub].GetAuthIdentity(ctx, code)
 	if err != nil {
 		slog.Error("get auth identity error", "err", err)
-		dto.NewJsonResp(ctx).FailWithMsg(dto.UnauthorizedError, "认证失败")
+		ctx.Redirect(http.StatusFound, a.redirectFrontPath)
 		return
 	}
 
@@ -102,14 +102,14 @@ func (a *OAuth2Api) GithubCallback(ctx *gin.Context) {
 	user, err := a.userSvc.FindOrCreateByAuthIdentity(authModel)
 	if err != nil {
 		slog.Error("find or create user failed", "err", err)
-		dto.NewJsonResp(ctx).Fail(dto.ServerError)
+		ctx.Redirect(http.StatusFound, a.redirectFrontPath)
 		return
 	}
 	// 4. 生成jwt token
 	token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateUserToken(user)
 	if err != nil {
 		slog.Error("generate jwt token failed", "err", err)
-		dto.NewJsonResp(ctx).Fail(dto.ServerError)
+		ctx.Redirect(http.StatusFound, a.redirectFrontPath)
 		return
 	}
 
@@ -118,7 +118,7 @@ func (a *OAuth2Api) GithubCallback(ctx *gin.Context) {
 	ctx.Redirect(http.StatusFound, redirectFullPath)
 }
 
-func (a *OAuth2Api) setStateCookie(ctx *gin.Context, state string) error {
+func (a *OAuth2Api) setStateCookie(ctx *gin.Context, state, path string) error {
 	claims := StateClaims{
 		State: state,
 	}
@@ -129,19 +129,19 @@ func (a *OAuth2Api) setStateCookie(ctx *gin.Context, state string) error {
 	}
 
 	ctx.SetCookie(a.authStateName, token,
-		a.authStateExpire, "/api/go-job/oauth2/github/callback",
+		a.authStateExpire, path,
 		"", false, false)
 	return nil
 }
 
 func (a *OAuth2Api) verifyState(ctx *gin.Context) error {
-	state := ctx.Query("state")
-	ck, err := ctx.Cookie(a.authStateName)
+	state := ctx.Query("state")               // 获取github回调的state
+	token, err := ctx.Cookie(a.authStateName) // 获取cookie中的state
 	if err != nil {
 		return err
 	}
 	var sc StateClaims
-	_, err = auth.NewJwtBuilder(a.authKey).ParseToken(&sc, ck)
+	_, err = auth.NewJwtBuilder(a.authKey).ParseToken(&sc, token)
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (a *OAuth2Api) verifyState(ctx *gin.Context) error {
 func (a *OAuth2Api) QQAuthURL(ctx *gin.Context) {
 	state := uuid.New()
 	authUrl := a.oauth2Svc[model.AuthTypeQQ].GetAuthUrl(ctx, state)
-	err := a.setStateCookie(ctx, state)
+	err := a.setStateCookie(ctx, state, "/api/go-job/oauth2/qq/callback")
 	if err != nil {
 		dto.NewJsonResp(ctx).Fail(dto.ServerError)
 	}
@@ -165,12 +165,12 @@ func (a *OAuth2Api) QQAuthURL(ctx *gin.Context) {
 
 func (a *OAuth2Api) QQCallback(ctx *gin.Context) {
 	// 1. 校验state
-	//err := a.verifyState(ctx)
-	//if err != nil {
-	//	slog.Error("verify state failed", "err", err)
-	//	dto.NewJsonResp(ctx).FailWithMsg(dto.UnauthorizedError, "非法请求")
-	//	return
-	//}
+	err := a.verifyState(ctx)
+	if err != nil {
+		slog.Error("verify qq state failed", "err", err)
+		dto.NewJsonResp(ctx).FailWithMsg(dto.UnauthorizedError, "非法请求")
+		return
+	}
 
 	// 2. 通过code获取userinfo
 	code := ctx.Query("code")
