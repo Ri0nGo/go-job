@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/redis/go-redis/v9"
 	"go-job/internal/model"
+	"strconv"
 	"time"
 )
 
@@ -29,10 +30,12 @@ func NewOAuth2StateCache(redisCache redis.Cmdable) *OAuth2StateCache {
 	}
 }
 
-func (c *OAuth2StateCache) Set(ctx context.Context, state string, oauth2State model.OAuth2State, ttl time.Duration) error {
-	return c.hset(ctx, c.getKey(state), c.oauth2StateToMap(oauth2State), ttl)
+// Set 设置state
+func (c *OAuth2StateCache) Set(ctx context.Context, state string, oauth2State model.OAuth2State) error {
+	return c.hset(ctx, c.getKey(state), c.oauth2StateToMap(oauth2State), c.ttl)
 }
 
+// Get 获取state
 func (c *OAuth2StateCache) Get(ctx context.Context, state string) (model.OAuth2State, error) {
 	result, err := c.redisCache.HGetAll(ctx, c.getKey(state)).Result()
 	if err != nil { // redis 执行报错了
@@ -44,26 +47,26 @@ func (c *OAuth2StateCache) Get(ctx context.Context, state string) (model.OAuth2S
 	return c.mapToOauth2State(result), nil
 }
 
+// MarkUsed 将state标记为已使用
 func (c *OAuth2StateCache) MarkUsed(ctx context.Context, state string) error {
-	//TODO implement me
-	panic("implement me")
+	return c.redisCache.HSet(ctx, c.getKey(state), "used", "true").Err()
 }
 
 func (c *OAuth2StateCache) getKey(state string) string {
 	return c.prefix + state
 }
 
-func (c *OAuth2StateCache) oauth2StateToMap(oauth2State model.OAuth2State) map[string]any {
-	return map[string]any{
+func (c *OAuth2StateCache) oauth2StateToMap(oauth2State model.OAuth2State) map[string]string {
+	return map[string]string{
 		"state":         oauth2State.State,
-		"scene":         oauth2State.Scene,
+		"scene":         string(oauth2State.Scene),
 		"redirect_page": oauth2State.RedirectPage,
 		"platform":      oauth2State.Platform,
-		"Used":          false,
+		"used":          strconv.FormatBool(oauth2State.Used),
 	}
 }
 
-func (c *OAuth2StateCache) hset(ctx context.Context, key string, value map[string]any, ttl time.Duration) error {
+func (c *OAuth2StateCache) hset(ctx context.Context, key string, value any, ttl time.Duration) error {
 	if err := c.redisCache.HSet(ctx, key, value).Err(); err != nil {
 		return err
 	}
