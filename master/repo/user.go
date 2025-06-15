@@ -17,6 +17,7 @@ type IUserRepo interface {
 	// oauth2
 	QueryByAuth(authType model.AuthType, identity string) (model.User, error)
 	CreateUserAndAuth(user *model.User, authModel *model.AuthIdentity) error
+	CreateAuth(auth *model.AuthIdentity) error
 }
 
 type UserRepo struct {
@@ -76,6 +77,10 @@ func (j *UserRepo) CreateUserAndAuth(user *model.User, authModel *model.AuthIden
 		}
 		return nil
 	})
+}
+
+func (j *UserRepo) CreateAuth(auth *model.AuthIdentity) error {
+	return j.mysqlDB.Create(auth).Error
 }
 
 func NewUserRepo(mysqlDB *gorm.DB) IUserRepo {

@@ -10,34 +10,38 @@ import (
 )
 
 var ErrOAuth2StateExpire = errors.New("state is expired")
+var ErrOAuth2IdentityExpire = errors.New("auth2 identity is expired")
 
 var (
 	defaultStateTTL    = time.Minute * 5
 	defaultStatePrefix = "oauth2:state:"
+	defaultAuthPrefix  = "oauth2:auth:"
 )
 
 type OAuth2StateCache struct {
 	redisCache redis.Cmdable
-	prefix     string
 	ttl        time.Duration
 }
 
 func NewOAuth2StateCache(redisCache redis.Cmdable) *OAuth2StateCache {
 	return &OAuth2StateCache{
 		redisCache: redisCache,
-		prefix:     defaultStatePrefix,
 		ttl:        defaultStateTTL,
 	}
 }
 
 // Set 设置state
-func (c *OAuth2StateCache) Set(ctx context.Context, state string, oauth2State model.OAuth2State) error {
-	return c.hset(ctx, c.getKey(state), c.oauth2StateToMap(oauth2State), c.ttl)
+func (c *OAuth2StateCache) SetState(ctx context.Context, state string, oauth2State model.OAuth2State) error {
+	return c.hset(ctx, c.getStateKey(state), c.oauth2StateToMap(oauth2State), c.ttl)
+}
+
+func (c *OAuth2StateCache) SetAuth(ctx context.Context, key string, val map[string]string, ttl time.Duration) error {
+	return c.hset(ctx, c.getAuthKey(key), val, ttl)
 }
 
 // Get 获取state
-func (c *OAuth2StateCache) Get(ctx context.Context, state string) (model.OAuth2State, error) {
-	result, err := c.redisCache.HGetAll(ctx, c.getKey(state)).Result()
+func (c *OAuth2StateCache) GetState(ctx context.Context, state string) (model.OAuth2State, error) {
+	result, err := c.redisCache.HGetAll(ctx, c.getStateKey(state)).Result()
 	if err != nil { // redis 执行报错了
 		return model.OAuth2State{}, err
 	}
@@ -47,13 +51,28 @@ func (c *OAuth2StateCache) Get(ctx context.Context, state string) (model.OAuth2S
 	return c.mapToOauth2State(result), nil
 }
 
-// MarkUsed 将state标记为已使用
-func (c *OAuth2StateCache) MarkUsed(ctx context.Context, state string) error {
-	return c.redisCache.HSet(ctx, c.getKey(state), "used", "true").Err()
+func (c *OAuth2StateCache) GetAuth(ctx context.Context, key string) (map[string]string, error) {
+	result, err := c.redisCache.HGetAll(ctx, c.getAuthKey(key)).Result()
+	if err != nil {
+		return nil, err
+	}
+	if len(result) == 0 {
+		return nil, ErrOAuth2IdentityExpire
+	}
+	return result, nil
 }
 
-func (c *OAuth2StateCache) getKey(state string) string {
-	return c.prefix + state
+// MarkUsed 将state标记为已使用
+func (c *OAuth2StateCache) MarkUsed(ctx context.Context, state string) error {
+	return c.redisCache.HSet(ctx, c.getStateKey(state), "used", "true").Err()
+}
+
+func (c *OAuth2StateCache) getStateKey(state string) string {
+	return defaultStatePrefix + state
+}
+
+func (c *OAuth2StateCache) getAuthKey(key string) string {
+	return defaultAuthPrefix + key
 }
 
 func (c *OAuth2StateCache) oauth2StateToMap(oauth2State model.OAuth2State) map[string]string {

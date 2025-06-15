@@ -53,6 +53,7 @@ func (a *UserApi) RegisterRoutes(group *gin.RouterGroup) {
 
 		userGroup.POST("/bind/email/code_send", a.BindEmailCodeSend)
 		userGroup.POST("/bind/email", a.BindEmail)
+		userGroup.POST("/bind/oauth2", a.BindOAuth2)
 	}
 }
 
@@ -188,7 +189,7 @@ func (a *UserApi) Login(ctx *gin.Context) {
 	domainUser, err := a.userService.Login(req.Username, req.Password)
 	switch err {
 	case nil:
-		token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateToken(a.userDomainToClaim(domainUser))
+		token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateToken(UserDomainToClaim(domainUser))
 		if err != nil {
 			slog.Error("create token err", "err", err)
 			dto.NewJsonResp(ctx).Fail(dto.ServerError)
@@ -295,6 +296,19 @@ func (a *UserApi) BindEmailCodeSend(ctx *gin.Context) {
 	dto.NewJsonResp(ctx).Success()
 }
 
+// BindOAuth2 绑定oauth2, 都是从绑定页面来的
+func (a *UserApi) BindOAuth2(ctx *gin.Context) {
+	// 1. 解析参数
+
+	// 2. 校验用户名和密码
+
+	// 3. 查询oauth2 信息
+
+	// 4. 绑定账户
+
+	// 5. 返回响应
+}
+
 // GetUserClaim 获取用户的UC信息
 func GetUserClaim(ctx *gin.Context) (*model.UserClaims, error) {
 	value, exists := ctx.Get("user")
@@ -308,7 +322,7 @@ func GetUserClaim(ctx *gin.Context) (*model.UserClaims, error) {
 	return uc, nil
 }
 
-func (a *UserApi) userDomainToClaim(user model.DomainUser) model.UserClaims {
+func UserDomainToClaim(user model.DomainUser) model.UserClaims {
 	uc := model.UserClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(consts.DefaultLoginJwtExpireTime)),

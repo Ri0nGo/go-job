@@ -15,6 +15,8 @@ import (
 	"go-job/master/service"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strconv"
 )
 
 type OAuth2Api struct {
@@ -71,21 +73,33 @@ func (a *OAuth2Api) RegisterRoutes(group *gin.RouterGroup) {
 // ---------------- github ---------------- //
 
 func (a *OAuth2Api) GithubAuthURL(ctx *gin.Context) {
+	scene, err := a.verifyScene(ctx.Query("scene"))
+	if err != nil {
+		slog.Error(err.Error())
+		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
+		return
+	}
+
 	state := uuid.New()
 	authUrl := a.oauth2Svc[model.AuthTypeGithub].GetAuthUrl(ctx, state)
-	err := a.setStateCookie(ctx, state, "/api/go-job/oauth2/github/callback")
-	if err != nil {
+	if err = a.setStateCookie(ctx, state, "/api/go-job/oauth2/github/callback"); err != nil {
 		dto.NewJsonResp(ctx).Fail(dto.ServerError)
+		return
+	}
+	if err = a.userSvc.SaveState(ctx, state, scene, model.AuthTypeGithub); err != nil {
+		slog.Error("save state failed", "err", err.Error())
+		dto.NewJsonResp(ctx).Fail(dto.ServerError)
+		return
 	}
 	dto.NewJsonResp(ctx).Success(authUrl)
 }
 
 func (a *OAuth2Api) GithubCallback(ctx *gin.Context) {
-	// 1. 校验state
-	err := a.verifyState(ctx)
+	// 验证state是否有效以及是否已经被使用过
+	oauth2State, err := a.verifyState(ctx)
 	if err != nil {
 		slog.Error("verify github state failed", "err", err)
-		//ctx.Redirect(http.StatusFound, a.redirectFrontPath)
+		ctx.Redirect(http.StatusFound, a.redirectFrontPath)
 		return
 	}
 
@@ -97,25 +111,12 @@ func (a *OAuth2Api) GithubCallback(ctx *gin.Context) {
 		ctx.Redirect(http.StatusFound, a.redirectFrontPath)
 		return
 	}
-
-	// 3. 注册用户
-	user, err := a.userSvc.FindOrCreateByAuthIdentity(authModel)
-	if err != nil {
-		slog.Error("find or create user failed", "err", err)
-		ctx.Redirect(http.StatusFound, a.redirectFrontPath)
-		return
+	// 从账户安全来的
+	if oauth2State.Scene == model.Auth2SceneSettingsPage {
+		a.callBackFromSettings(ctx, authModel, oauth2State)
+	} else { // 从登录页来的
+		a.callbackToLogin(ctx, authModel, oauth2State)
 	}
-	// 4. 生成jwt token
-	token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateUserToken(user)
-	if err != nil {
-		slog.Error("generate jwt token failed", "err", err)
-		ctx.Redirect(http.StatusFound, a.redirectFrontPath)
-		return
-	}
-
-	redirectFullPath := fmt.Sprintf("%s?t=%s&uid=%d", a.redirectFrontPath, token, user.Id)
-	slog.Info("redirectFullPath: " + redirectFullPath)
-	ctx.Redirect(http.StatusFound, redirectFullPath)
 }
 
 func (a *OAuth2Api) setStateCookie(ctx *gin.Context, state, path string) error {
@@ -134,14 +135,28 @@ func (a *OAuth2Api) setStateCookie(ctx *gin.Context, state, path string) error {
 	return nil
 }
 
-func (a *OAuth2Api) verifyState(ctx *gin.Context) error {
+func (a *OAuth2Api) verifyState(ctx *gin.Context) (model.OAuth2State, error) {
 	state := ctx.Query("state")               // 获取github回调的state
 	token, err := ctx.Cookie(a.authStateName) // 获取cookie中的state
 	if err != nil {
-		return err
+		return model.OAuth2State{}, err
 	}
+	// 校验state是否为篡改
+	if err := a.checkStateValid(state, token); err != nil { // 确保state未被篡改
+		return model.OAuth2State{}, err
+	}
+	// 校验state是否已经被使用过了
+	oauth2State, err := a.userSvc.VerifyState(ctx, state)
+	if err != nil {
+		slog.Error("verify state failed", "state", state, "err", err)
+		return model.OAuth2State{}, err
+	}
+	return oauth2State, nil
+}
+
+func (a *OAuth2Api) checkStateValid(state string, token string) error {
 	var sc StateClaims
-	_, err = auth.NewJwtBuilder(a.authKey).ParseToken(&sc, token)
+	_, err := auth.NewJwtBuilder(a.authKey).ParseToken(&sc, token)
 	if err != nil {
 		return err
 	}
@@ -154,21 +169,32 @@ func (a *OAuth2Api) verifyState(ctx *gin.Context) error {
 // ---------------- qq ---------------- //
 
 func (a *OAuth2Api) QQAuthURL(ctx *gin.Context) {
+	scene, err := a.verifyScene(ctx.Query("scene"))
+	if err != nil {
+		slog.Error(err.Error())
+		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
+		return
+	}
 	state := uuid.New()
 	authUrl := a.oauth2Svc[model.AuthTypeQQ].GetAuthUrl(ctx, state)
-	err := a.setStateCookie(ctx, state, "/api/go-job/oauth2/qq/callback")
-	if err != nil {
+	if err = a.setStateCookie(ctx, state, "/api/go-job/oauth2/qq/callback"); err != nil {
 		dto.NewJsonResp(ctx).Fail(dto.ServerError)
+		return
+	}
+	if err = a.userSvc.SaveState(ctx, state, scene, model.AuthTypeQQ); err != nil {
+		slog.Error("save state failed", "err", err.Error())
+		dto.NewJsonResp(ctx).Fail(dto.ServerError)
+		return
 	}
 	dto.NewJsonResp(ctx).Success(authUrl)
 }
 
 func (a *OAuth2Api) QQCallback(ctx *gin.Context) {
 	// 1. 校验state
-	err := a.verifyState(ctx)
+	oauth2State, err := a.verifyState(ctx)
 	if err != nil {
 		slog.Error("verify qq state failed", "err", err)
-		dto.NewJsonResp(ctx).FailWithMsg(dto.UnauthorizedError, "非法请求")
+		ctx.Redirect(http.StatusFound, a.redirectFrontPath)
 		return
 	}
 
@@ -181,24 +207,72 @@ func (a *OAuth2Api) QQCallback(ctx *gin.Context) {
 		return
 	}
 
-	// 3. 注册用户
-	user, err := a.userSvc.FindOrCreateByAuthIdentity(authModel)
+	// 从账户安全来的
+	if oauth2State.Scene == model.Auth2SceneSettingsPage {
+		a.callBackFromSettings(ctx, authModel, oauth2State)
+	} else { // 从登录页来的
+		a.callbackToLogin(ctx, authModel, oauth2State)
+	}
+}
+
+func (a *OAuth2Api) verifyScene(scene string) (model.Auth2Scene, error) {
+	validScene := map[string]model.Auth2Scene{
+		"account-security": model.Auth2SceneSettingsPage,
+		"login":            model.Auth2SceneLoginPage,
+	}
+	if val, ok := validScene[scene]; ok {
+		return val, nil
+	}
+	return "", fmt.Errorf("scene %s is not valid", scene)
+}
+
+func (a *OAuth2Api) callBackFromSettings(ctx *gin.Context, authModel model.AuthIdentity, oauth2State model.OAuth2State) {
+	uc, err := GetUserClaim(ctx)
 	if err != nil {
-		slog.Error("find or create qq user failed", "err", err)
-		dto.NewJsonResp(ctx).Fail(dto.ServerError)
+		slog.Error("get user claim error", "err", err)
+		ctx.Redirect(http.StatusFound, a.redirectFrontPath)
+	}
+	authModel.UserID = uc.Uid
+	if err := a.userSvc.BindOAuth2FromSettings(ctx, authModel); err != nil {
+		slog.Error("bind oauth2 error", "err", err)
+		redirectPath := fmt.Sprintf("%s?status=%d", oauth2State.RedirectPage, 1)
+		ctx.Redirect(http.StatusFound, redirectPath) // 跳转会原来的页面
 		return
 	}
-	// 4. 生成jwt token
-	token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateUserToken(user)
+	redirectPath := fmt.Sprintf("%s?status=%d", oauth2State.RedirectPage, 0)
+	ctx.Redirect(http.StatusFound, redirectPath)
+}
+
+func (a *OAuth2Api) callbackToLogin(ctx *gin.Context, authModel model.AuthIdentity,
+	oauth2State model.OAuth2State) {
+	key := uuid.New()
+	domainUser, ret, err := a.userSvc.UserOAuth2FromLogin(ctx, key, authModel)
 	if err != nil {
-		slog.Error("generate jwt token failed", "err", err)
-		dto.NewJsonResp(ctx).Fail(dto.ServerError)
+		slog.Error("get user identity error", "err", err)
+		ctx.Redirect(http.StatusFound, a.redirectFrontPath)
 		return
 	}
 
-	redirectFullPath := fmt.Sprintf("%s?t=%s&uid=%d", a.redirectFrontPath, token, user.Id)
-	slog.Info("redirectFullPath: " + redirectFullPath)
-	ctx.Redirect(http.StatusFound, redirectFullPath)
+	q := url.Values{}
+	q.Set("redirect_page", oauth2State.RedirectPage)
+	switch ret {
+	case 0: // 跳转到绑定用户界面
+		redirectURL := a.redirectFrontPath + "?" + q.Encode()
+		ctx.Redirect(302, redirectURL)
+	case 1: // 跳转到登录界面
+		token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateToken(UserDomainToClaim(domainUser))
+		if err != nil {
+			slog.Error("generate token failed", "err", err)
+			ctx.Redirect(http.StatusFound, a.redirectFrontPath)
+		}
+		q.Set("t", token)
+		q.Set("uid", strconv.Itoa(domainUser.Id))
+		q.Set("key", key) // 用来获取用户信息
+		redirectURL := a.redirectFrontPath + "?" + q.Encode()
+		ctx.Redirect(302, redirectURL)
+	default:
+		ctx.Redirect(302, a.redirectFrontPath)
+	}
 }
 
 type StateClaims struct {
