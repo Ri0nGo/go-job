@@ -15,8 +15,8 @@ type IUserRepo interface {
 	QueryList(page model.Page) (model.Page, error)
 
 	// oauth2
-	QueryByAuth(authType model.AuthType, identity string) (model.User, error)
-	CreateUserAndAuth(user *model.User, authModel *model.AuthIdentity) error
+	QueryUserByIdentity(authType model.AuthType, identity string) (model.User, error)
+	QueryAuth(authType model.AuthType, identity string) (model.AuthIdentity, error)
 	CreateAuth(auth *model.AuthIdentity) error
 }
 
@@ -55,7 +55,7 @@ func (j *UserRepo) QueryByUsername(username string) (model.User, error) {
 	return user, err
 }
 
-func (j *UserRepo) QueryByAuth(authType model.AuthType, identity string) (model.User, error) {
+func (j *UserRepo) QueryUserByIdentity(authType model.AuthType, identity string) (model.User, error) {
 	// select t1.* from user t1 join auth_identity t2 on t1.id = t2.user_id and t2.identity = identity and t2.type = type
 	var user model.User
 	err := j.mysqlDB.Table("user AS t1").
@@ -66,7 +66,15 @@ func (j *UserRepo) QueryByAuth(authType model.AuthType, identity string) (model.
 	return user, err
 }
 
-func (j *UserRepo) CreateUserAndAuth(user *model.User, authModel *model.AuthIdentity) error {
+func (j *UserRepo) QueryAuth(authType model.AuthType, identity string) (model.AuthIdentity, error) {
+	var authModel model.AuthIdentity
+	err := j.mysqlDB.
+		Where("type = ? and identity = ?", authType, identity).
+		First(&authModel).Error
+	return authModel, err
+}
+
+/*func (j *UserRepo) CreateUserAndAuth(user *model.User, authModel *model.AuthIdentity) error {
 	return j.mysqlDB.Transaction(func(tx *gorm.DB) error {
 		if err := j.Insert(user); err != nil {
 			return err
@@ -77,7 +85,7 @@ func (j *UserRepo) CreateUserAndAuth(user *model.User, authModel *model.AuthIden
 		}
 		return nil
 	})
-}
+}*/
 
 func (j *UserRepo) CreateAuth(auth *model.AuthIdentity) error {
 	return j.mysqlDB.Create(auth).Error

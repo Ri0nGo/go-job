@@ -62,7 +62,9 @@ var (
 	UsernameExist              = genCodeMsg(userModule, 7, "用户名已存在")
 	UserPasswordNotMatch       = genCodeMsg(userModule, 8, "两次密码不一致")
 	UserLoginErr               = genCodeMsg(userModule, 9, "用户登录失败")
-	UserEmailBindErr           = genCodeMsg(userModule, 10, "邮箱绑定失败")
+	UserOAuth2Err              = genCodeMsg(userModule, 10, "用户授权异常")
+	UserEmailBindErr           = genCodeMsg(userModule, 11, "邮箱绑定失败")
+	UserOAuth2IsBindErr        = genCodeMsg(userModule, 12, "该账号已经绑定过第三方账号")
 )
 
 var (

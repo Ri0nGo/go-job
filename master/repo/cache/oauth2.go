@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/redis/go-redis/v9"
+	"go-job/internal/iface/oauth2"
 	"go-job/internal/model"
 	"strconv"
 	"time"
@@ -23,7 +24,7 @@ type OAuth2StateCache struct {
 	ttl        time.Duration
 }
 
-func NewOAuth2StateCache(redisCache redis.Cmdable) *OAuth2StateCache {
+func NewOAuth2StateCache(redisCache redis.Cmdable) oauth2.IOAuth2StateCache {
 	return &OAuth2StateCache{
 		redisCache: redisCache,
 		ttl:        defaultStateTTL,

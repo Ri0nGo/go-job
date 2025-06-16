@@ -299,14 +299,40 @@ func (a *UserApi) BindEmailCodeSend(ctx *gin.Context) {
 // BindOAuth2 绑定oauth2, 都是从绑定页面来的
 func (a *UserApi) BindOAuth2(ctx *gin.Context) {
 	// 1. 解析参数
+	var req dto.ReqOAuth2Bind
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		slog.Error("params parse error", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
+		return
+	}
 
-	// 2. 校验用户名和密码
-
-	// 3. 查询oauth2 信息
-
-	// 4. 绑定账户
-
-	// 5. 返回响应
+	domainUser, err := a.userService.OAuth2Bind(ctx, req)
+	switch {
+	case err == nil:
+		token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateToken(UserDomainToClaim(domainUser))
+		if err != nil {
+			slog.Error("create token err", "err", err)
+			dto.NewJsonResp(ctx).Fail(dto.ServerError)
+			return
+		}
+		ctx.Header("Authorization", token)
+		dto.NewJsonResp(ctx).Success(map[string]int{
+			"id": domainUser.Id,
+		})
+		return
+	case errors.Is(err, service.ErrOAuth2KeyIsExpired):
+		dto.NewJsonResp(ctx).FailWithMsg(dto.UsernameOrPasswordError, err.Error())
+	case errors.Is(err, service.ErrInvalidUserOrPassword):
+		dto.NewJsonResp(ctx).Fail(dto.UsernameOrPasswordError)
+		return
+	case errors.Is(err, service.ErrOAuth2UserDuplicate):
+		dto.NewJsonResp(ctx).FailWithMsg(dto.UserOAuth2IsBindErr, err.Error())
+		return
+	case errors.Is(err, service.ErrOAuth2UserDuplicate):
+	default:
+		slog.Error("oauth2 bind failed", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UserOAuth2Err)
+	}
 }
 
 // GetUserClaim 获取用户的UC信息

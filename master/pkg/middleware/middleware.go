@@ -20,6 +20,7 @@ func NewGinMiddlewares(cmd redis.Cmdable) []gin.HandlerFunc {
 		cors(),
 		NewLoginJwtMWBuilder(config.App.Server.Key).SkipPaths([]string{
 			"/api/go-job/users/login",
+			"/api/go-job/users/bind/oauth2",
 			"/api/go-job/oauth2/github/authurl",
 			"/api/go-job/oauth2/github/callback",
 			"/api/go-job/oauth2/qq/authurl",

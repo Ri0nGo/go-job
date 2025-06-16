@@ -3,14 +3,16 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/go-sql-driver/mysql"
-	"github.com/rogpeppe/go-internal/cache"
+	"go-job/internal/dto"
 	"go-job/internal/iface/oauth2"
 	"go-job/internal/model"
 	"go-job/internal/pkg/utils"
 	"go-job/master/repo"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"log/slog"
 	"math/rand"
 	"strconv"
 	"time"
@@ -20,6 +22,8 @@ var (
 	ErrUsernameDuplicate     = errors.New("duplicate username")
 	ErrInvalidUserOrPassword = errors.New("用户名或密码不对")
 	ErrDuplicateEmail        = errors.New("邮箱已被占用")
+	ErrOAuth2KeyIsExpired    = errors.New("授权时间过长，请重新授权")
+	ErrOAuth2UserDuplicate   = errors.New("该账号已经绑定过")
 )
 
 var sceneRedirectPath = map[model.Auth2Scene]string{
@@ -39,19 +43,16 @@ type IUserService interface {
 	SaveState(ctx context.Context, state string, scene model.Auth2Scene, platform model.AuthType) error
 	VerifyState(ctx context.Context, state string) (model.OAuth2State, error)
 
-	// oauth2
-	FindOrCreateByAuthIdentity(identity model.AuthIdentity) (model.DomainUser, error)
-
 	// UserOAuth2FromLogin 入参，key：认证唯一标识
 	// 返回 用户实例，状态(0：用户不存在，1：存在，2 位置错误)，具体错误
 	UserOAuth2FromLogin(ctx context.Context, key string, identity model.AuthIdentity) (model.DomainUser, int, error)
 	// BindOAuth2 绑定OAuth2
 	BindOAuth2FromSettings(ctx context.Context, authModel model.AuthIdentity) error
+	OAuth2Bind(ctx context.Context, req dto.ReqOAuth2Bind) (model.DomainUser, error)
 }
 
 type UserService struct {
 	UserRepo repo.IUserRepo
-	redisSvc cache.Cache
 	stateSvc oauth2.IOAuth2StateCache
 }
 
@@ -161,36 +162,12 @@ func (s *UserService) UserBind(id int, email string) error {
 	return err
 }
 
-func (s *UserService) FindOrCreateByAuthIdentity(authModel model.AuthIdentity) (model.DomainUser, error) {
-	// 1. 查询之前是否登录过
-	user, err := s.UserRepo.QueryByAuth(authModel.Type, authModel.Identity)
-	switch err {
-	case gorm.ErrRecordNotFound:
-		// 创建用户
-		userName, err := s.getUsername()
-		if err != nil {
-			return model.DomainUser{}, err
-		}
-		userModel := &model.User{
-			Username: userName,
-			Nickname: authModel.Name,
-		}
-		if err = s.UserRepo.CreateUserAndAuth(userModel, &authModel); err != nil {
-			return model.DomainUser{}, err
-		}
-		return s.userToDomainUser(*userModel), nil
-	case nil:
-		return s.userToDomainUser(user), nil
-	default:
-		return model.DomainUser{}, err
-	}
-}
-
-// UserOAuthByAuthIdentity
+// UserOAuth2FromLogin 用户关联第三方账户（登录授权界面）
 func (s *UserService) UserOAuth2FromLogin(ctx context.Context, key string, identity model.AuthIdentity) (model.DomainUser, int, error) {
-	user, err := s.UserRepo.QueryByAuth(identity.Type, identity.Identity)
+	user, err := s.UserRepo.QueryUserByIdentity(identity.Type, identity.Identity)
 	switch err {
 	case gorm.ErrRecordNotFound: // 第三方账户未绑定已存在用户
+		// todo 这里应该封装一下
 		value := map[string]string{
 			"identity": identity.Identity,
 			"type":     strconv.Itoa(int(identity.Type)),
@@ -208,8 +185,48 @@ func (s *UserService) UserOAuth2FromLogin(ctx context.Context, key string, ident
 	}
 }
 
+// BindOAuth2FromSettings 用户绑定第三方账户（账号安全界面）
 func (s *UserService) BindOAuth2FromSettings(ctx context.Context, authModel model.AuthIdentity) error {
 	return s.UserRepo.CreateAuth(&authModel)
+}
+
+// OAuth2Bind 绑定第三方账户
+func (s *UserService) OAuth2Bind(ctx context.Context, req dto.ReqOAuth2Bind) (model.DomainUser, error) {
+	// 查询key 是否过期
+	auth, err := s.stateSvc.GetAuth(ctx, req.Key)
+	if err != nil {
+		slog.Error("get auth key failed", "key", req.Key, "err", err)
+		return model.DomainUser{}, ErrOAuth2KeyIsExpired
+	}
+	// 验证用户名和密码
+	domainUser, err := s.Login(req.Username, req.Password)
+	if err != nil {
+		return model.DomainUser{}, err
+	}
+	t, err := strconv.Atoi(auth["type"])
+	if err != nil {
+		slog.Error("auth type covert to int failed", "type", auth["type"])
+		return model.DomainUser{}, err
+	}
+	// 校验用户是否已经绑定过
+	authType := model.AuthType(t)
+	authModel, err := s.UserRepo.QueryAuth(authType, auth["identity"])
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) { // 查询异常了
+		return model.DomainUser{}, err
+	}
+	if authModel.ID != 0 { // 该账号已经绑定过了
+		return model.DomainUser{}, fmt.Errorf("%w%s", ErrOAuth2UserDuplicate, authType.String())
+	}
+
+	if err = s.UserRepo.CreateAuth(&model.AuthIdentity{
+		UserID:   domainUser.Id,
+		Type:     authType,
+		Identity: auth["identity"],
+		Name:     auth["name"],
+	}); err != nil {
+		return model.DomainUser{}, err
+	}
+	return domainUser, nil
 }
 
 func (s *UserService) domainUserToUser(user model.DomainUser) model.User {
@@ -244,8 +261,9 @@ func (s *UserService) generateNotDuplicatedUserName() string {
 	return "用户" + strconv.Itoa(int(randomId))
 }
 
-func NewUserService(userRepo repo.IUserRepo) IUserService {
+func NewUserService(userRepo repo.IUserRepo, stateSvc oauth2.IOAuth2StateCache) IUserService {
 	return &UserService{
 		UserRepo: userRepo,
+		stateSvc: stateSvc,
 	}
 }

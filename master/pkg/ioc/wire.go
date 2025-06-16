@@ -31,6 +31,7 @@ func InitWebServer() *WebContainer {
 		database.NewMySQLWithGORM,
 		database.NewRedisClient,
 		cache.NewEmailCodeCache,
+		cache.NewOAuth2StateCache,
 
 		// repo
 		repo.NewJobRepo,

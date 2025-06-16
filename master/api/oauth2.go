@@ -248,7 +248,7 @@ func (a *OAuth2Api) callbackToLogin(ctx *gin.Context, authModel model.AuthIdenti
 	key := uuid.New()
 	domainUser, ret, err := a.userSvc.UserOAuth2FromLogin(ctx, key, authModel)
 	if err != nil {
-		slog.Error("get user identity error", "err", err)
+		slog.Error("get user OAuth2 error", "err", err)
 		ctx.Redirect(http.StatusFound, a.redirectFrontPath)
 		return
 	}
@@ -256,10 +256,13 @@ func (a *OAuth2Api) callbackToLogin(ctx *gin.Context, authModel model.AuthIdenti
 	q := url.Values{}
 	q.Set("redirect_page", oauth2State.RedirectPage)
 	switch ret {
-	case 0: // 跳转到绑定用户界面
+	case 0: // 第三方账号未绑定用户
+		q.Set("key", key) // 用来获取用户信息
+		q.Set("platform", oauth2State.Platform)
 		redirectURL := a.redirectFrontPath + "?" + q.Encode()
+		slog.Info("bind oauth2 account", "redirectURL", redirectURL)
 		ctx.Redirect(302, redirectURL)
-	case 1: // 跳转到登录界面
+	case 1: // 第三方账号已经绑定过用户
 		token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateToken(UserDomainToClaim(domainUser))
 		if err != nil {
 			slog.Error("generate token failed", "err", err)
@@ -267,8 +270,8 @@ func (a *OAuth2Api) callbackToLogin(ctx *gin.Context, authModel model.AuthIdenti
 		}
 		q.Set("t", token)
 		q.Set("uid", strconv.Itoa(domainUser.Id))
-		q.Set("key", key) // 用来获取用户信息
 		redirectURL := a.redirectFrontPath + "?" + q.Encode()
+		slog.Info("already bind oauth2 account", "redirectURL", redirectURL)
 		ctx.Redirect(302, redirectURL)
 	default:
 		ctx.Redirect(302, a.redirectFrontPath)
