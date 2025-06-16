@@ -87,3 +87,10 @@ type OAuth2State struct {
 	Platform     string
 	Used         bool
 }
+
+type UserAuthInfo struct {
+	ID       int            `json:"id"`
+	Username string         `json:"username"`
+	Email    string         `json:"email"`
+	Auths    []AuthIdentity `json:"auths"`
+}

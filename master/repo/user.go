@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"errors"
 	"go-job/internal/model"
 	"go-job/internal/pkg/paginate"
 	"gorm.io/gorm"
@@ -17,6 +18,7 @@ type IUserRepo interface {
 	// oauth2
 	QueryUserByIdentity(authType model.AuthType, identity string) (model.User, error)
 	QueryAuth(authType model.AuthType, identity string) (model.AuthIdentity, error)
+	QueryUserSecurity(uid int) (model.UserAuthInfo, error)
 	CreateAuth(auth *model.AuthIdentity) error
 }
 
@@ -74,19 +76,24 @@ func (j *UserRepo) QueryAuth(authType model.AuthType, identity string) (model.Au
 	return authModel, err
 }
 
-/*func (j *UserRepo) CreateUserAndAuth(user *model.User, authModel *model.AuthIdentity) error {
-	return j.mysqlDB.Transaction(func(tx *gorm.DB) error {
-		if err := j.Insert(user); err != nil {
-			return err
-		}
-		authModel.UserID = user.Id
-		if err := j.mysqlDB.Create(authModel).Error; err != nil {
-			return err
-		}
-		return nil
-	})
-}*/
+func (j *UserRepo) QueryUserSecurity(uid int) (model.UserAuthInfo, error) {
+	user, err := j.QueryById(uid)
+	if err != nil {
+		return model.UserAuthInfo{}, err
+	}
+	var auths []model.AuthIdentity
+	err = j.mysqlDB.Where("user_id = ?", uid).First(&auths).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return model.UserAuthInfo{}, err
+	}
+	return model.UserAuthInfo{
+		ID:       user.Id,
+		Username: user.Username,
+		Email:    *user.Email,
+		Auths:    auths,
+	}, nil
 
+}
 func (j *UserRepo) CreateAuth(auth *model.AuthIdentity) error {
 	return j.mysqlDB.Create(auth).Error
 }

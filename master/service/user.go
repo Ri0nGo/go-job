@@ -38,6 +38,7 @@ type IUserService interface {
 	AddUser(user model.User) (model.User, error)
 	DeleteUser(id int) error
 	UpdateUser(user model.DomainUser) error
+	UserSecurity(uid int) (dto.RespUserSecurity, error)
 
 	UserBind(id int, email string) error
 	SaveState(ctx context.Context, state string, scene model.Auth2Scene, platform model.AuthType) error
@@ -227,6 +228,24 @@ func (s *UserService) OAuth2Bind(ctx context.Context, req dto.ReqOAuth2Bind) (mo
 		return model.DomainUser{}, err
 	}
 	return domainUser, nil
+}
+
+func (s *UserService) UserSecurity(uid int) (dto.RespUserSecurity, error) {
+	userAuthInfo, err := s.UserRepo.QueryUserSecurity(uid)
+	if err != nil {
+		return dto.RespUserSecurity{}, err
+	}
+	var resp dto.RespUserSecurity
+	resp.Email = userAuthInfo.Email
+	for _, auth := range userAuthInfo.Auths {
+		switch auth.Type {
+		case model.AuthTypeQQ:
+			resp.QQ = true
+		case model.AuthTypeGithub:
+			resp.Github = true
+		}
+	}
+	return resp, nil
 }
 
 func (s *UserService) domainUserToUser(user model.DomainUser) model.User {
