@@ -45,11 +45,13 @@ func (a *UserApi) RegisterRoutes(group *gin.RouterGroup) {
 	userGroup := group.Group("/users")
 	{
 		userGroup.GET("", a.GetUserList)
-		userGroup.GET("/:id", a.GetUser)
+		//userGroup.GET("/:id", a.GetUser)  // 禁止查询其他用户
+		userGroup.GET("/profile", a.Profile)
 		userGroup.POST("/add", a.AddUser)
 		userGroup.PUT("/update", a.UpdateUser)
 		userGroup.DELETE("/:id", a.DeleteUser)
 		userGroup.POST("/login", a.Login)
+		userGroup.GET("/security", a.Security)
 
 		userGroup.POST("/bind/email/code_send", a.BindEmailCodeSend)
 		userGroup.POST("/bind/email", a.BindEmail)
@@ -66,6 +68,26 @@ func (a *UserApi) GetUser(ctx *gin.Context) {
 		return
 	}
 	user, err := a.userService.GetUser(id)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		dto.NewJsonResp(ctx).Success()
+		return
+	}
+	if err != nil {
+		slog.Error("get user err:", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UserNotExist)
+		return
+	}
+	dto.NewJsonResp(ctx).Success(user)
+}
+
+// Profile 查询当前用户
+func (a *UserApi) Profile(ctx *gin.Context) {
+	uc, err := GetUserClaim(ctx)
+	if err != nil {
+		dto.NewJsonResp(ctx).Fail(dto.UserNotExist)
+		return
+	}
+	user, err := a.userService.GetUser(uc.Uid)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		dto.NewJsonResp(ctx).Success()
 		return
@@ -171,6 +193,20 @@ func (a *UserApi) UpdateUser(ctx *gin.Context) {
 		return
 	}
 	dto.NewJsonResp(ctx).Success()
+}
+
+func (a *UserApi) Security(ctx *gin.Context) {
+	uc, err := GetUserClaim(ctx)
+	if err != nil {
+		dto.NewJsonResp(ctx).Fail(dto.UserNotExist)
+		return
+	}
+	resp, err := a.userService.UserSecurity(uc.Uid)
+	if err != nil {
+		dto.NewJsonResp(ctx).Fail(dto.UserGetFailed)
+		return
+	}
+	dto.NewJsonResp(ctx).Success(resp)
 }
 
 // Login 用户登录
