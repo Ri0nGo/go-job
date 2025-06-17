@@ -61,3 +61,10 @@ CREATE TABLE `auth_identity` (
      KEY `idx_type_identity` (`type`,`identity`) COMMENT '类型和身份标识唯一'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 ```
+
+## 2025-06-18 用户表新增登录时间字段
+
+```mysql
+alter table `user`
+    add login_time datetime null;
+```

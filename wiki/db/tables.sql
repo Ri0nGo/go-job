@@ -72,6 +72,7 @@ CREATE TABLE `user` (
     `about` varchar(200) DEFAULT NULL,
     `created_time` datetime DEFAULT NULL,
     `updated_time` datetime DEFAULT NULL,
+    `login_time` datetime DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `idx_uniq_username` (`username`),
     UNIQUE KEY `idx_uniq_email` (`email`)

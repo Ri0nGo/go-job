@@ -68,17 +68,6 @@ func (s *UserService) GetUser(id int) (model.DomainUser, error) {
 	return s.userToDomainUser(userDao), nil
 }
 
-func (s *UserService) userToDomainUser(user model.User) model.DomainUser {
-	return model.DomainUser{
-		Id:          user.Id,
-		Username:    user.Username,
-		Nickname:    user.Nickname,
-		Email:       utils.PtrToVal(user.Email),
-		CreatedTime: user.CreatedTime,
-		About:       user.About,
-	}
-}
-
 func (s *UserService) GetUserList(page model.Page) (model.Page, error) {
 	return s.UserRepo.QueryList(page)
 }
@@ -148,6 +137,12 @@ func (s *UserService) Login(username, password string) (model.DomainUser, error)
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		return s.userToDomainUser(user), ErrInvalidUserOrPassword
+	}
+
+	if err = s.UserRepo.UpdateDataById(user.Id, map[string]any{
+		"login_time": time.Now(),
+	}); err != nil {
+		return s.userToDomainUser(user), err
 	}
 	return s.userToDomainUser(user), nil
 }
@@ -254,6 +249,19 @@ func (s *UserService) domainUserToUser(user model.DomainUser) model.User {
 		Username: user.Username,
 		Nickname: user.Nickname,
 		About:    user.About,
+	}
+}
+
+func (s *UserService) userToDomainUser(user model.User) model.DomainUser {
+	return model.DomainUser{
+		Id:          user.Id,
+		Username:    user.Username,
+		Nickname:    user.Nickname,
+		Email:       utils.PtrToVal(user.Email),
+		CreatedTime: user.CreatedTime,
+		UpdatedTime: user.UpdatedTime,
+		LoginTime:   user.LoginTime,
+		About:       user.About,
 	}
 }
 

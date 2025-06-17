@@ -38,8 +38,9 @@ type User struct {
 	Nickname        string    `json:"nickname"`
 	About           string    `json:"about"`
 	Email           *string   `json:"email"`
-	CreatedTime     time.Time `json:"created_at" gorm:"column:created_time;autoCreateTime"`
-	UpdatedTime     time.Time `json:"updated_at" gorm:"column:updated_time;autoUpdateTime"`
+	CreatedTime     time.Time `json:"created_time" gorm:"column:created_time;autoCreateTime"`
+	UpdatedTime     time.Time `json:"updated_time" gorm:"column:updated_time;autoUpdateTime"`
+	LoginTime       time.Time `json:"login_time" gorm:"column:login_time"`
 	ConfirmPassword string    `json:"confirm_password" gorm:"-"`
 }
 
@@ -54,7 +55,8 @@ type DomainUser struct {
 	About       string    `json:"about"`
 	Email       string    `json:"email"`
 	CreatedTime time.Time `json:"created_time"`
-	UpdateTime  time.Time `json:"updateTime"`
+	UpdatedTime time.Time `json:"updated_time"`
+	LoginTime   time.Time `json:"login_time"`
 }
 
 func (u *DomainUser) TableName() string {

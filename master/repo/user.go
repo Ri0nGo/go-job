@@ -12,6 +12,7 @@ type IUserRepo interface {
 	QueryByUsername(username string) (model.User, error)
 	Insert(*model.User) error
 	Update(model.User) error
+	UpdateDataById(int, map[string]any) error
 	Delete(id int) error
 	QueryList(page model.Page) (model.Page, error)
 
@@ -41,6 +42,14 @@ func (j *UserRepo) Update(user model.User) error {
 		return ErrorIDIsZero
 	}
 	return j.mysqlDB.Updates(&user).Error
+}
+
+func (j *UserRepo) UpdateDataById(id int, data map[string]any) error {
+	return j.mysqlDB.Model(&model.User{}).
+		Omit("updated_time").
+		Where("id = ?", id).
+		Updates(data).
+		Error
 }
 
 func (j *UserRepo) Delete(id int) error {
@@ -94,6 +103,7 @@ func (j *UserRepo) QueryUserSecurity(uid int) (model.UserAuthInfo, error) {
 	}, nil
 
 }
+
 func (j *UserRepo) CreateAuth(auth *model.AuthIdentity) error {
 	return j.mysqlDB.Create(auth).Error
 }
