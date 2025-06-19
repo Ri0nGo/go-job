@@ -60,6 +60,7 @@ func (o *OAuth2Service) getAccessToken(ctx context.Context, code string) (string
 
 	// 发起请求
 	resp, err := resty.New().
+		SetProxy("http://127.0.0.1:7897").
 		R().
 		SetHeaders(headers).
 		SetQueryParams(params).
@@ -89,6 +90,7 @@ func (o *OAuth2Service) getUserInfo(ctx context.Context, accessToken string) (mo
 		"Content-Type":  "application/json",
 	}
 	resp, err := resty.New().
+		SetProxy("http://127.0.0.1:7897").
 		SetHeaders(header).
 		SetTimeout(time.Second * 5).
 		R().

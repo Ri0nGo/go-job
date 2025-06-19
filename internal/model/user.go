@@ -27,8 +27,8 @@ const (
 type Auth2Scene string
 
 const (
-	Auth2SceneLoginPage    Auth2Scene = "login_page"
-	Auth2SceneSettingsPage            = "settings_page"
+	Auth2SceneLoginPage           Auth2Scene = "login_page"
+	Auth2SceneAccountSecurityPage            = "account_page"
 )
 
 type User struct {
@@ -80,14 +80,6 @@ type AuthIdentity struct {
 
 func (a *AuthIdentity) TableName() string {
 	return "auth_identity"
-}
-
-type OAuth2State struct {
-	State        string
-	Scene        Auth2Scene // 场景，表示从那个页面发起的操作
-	RedirectPage string
-	Platform     string
-	Used         bool
 }
 
 type UserAuthInfo struct {

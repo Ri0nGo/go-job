@@ -24,7 +24,7 @@ type OAuth2StateCache struct {
 	ttl        time.Duration
 }
 
-func NewOAuth2StateCache(redisCache redis.Cmdable) oauth2.IOAuth2StateCache {
+func NewOAuth2StateCache(redisCache redis.Cmdable) oauth2.IOAuth2Cache {
 	return &OAuth2StateCache{
 		redisCache: redisCache,
 		ttl:        defaultStateTTL,
@@ -78,11 +78,11 @@ func (c *OAuth2StateCache) getAuthKey(key string) string {
 
 func (c *OAuth2StateCache) oauth2StateToMap(oauth2State model.OAuth2State) map[string]string {
 	return map[string]string{
-		"state":         oauth2State.State,
-		"scene":         string(oauth2State.Scene),
-		"redirect_page": oauth2State.RedirectPage,
-		"platform":      oauth2State.Platform,
-		"used":          strconv.FormatBool(oauth2State.Used),
+		"uid":      strconv.Itoa(oauth2State.Uid),
+		"state":    oauth2State.State,
+		"scene":    string(oauth2State.Scene),
+		"platform": oauth2State.Platform,
+		"used":     strconv.FormatBool(oauth2State.Used),
 	}
 }
 
@@ -95,10 +95,9 @@ func (c *OAuth2StateCache) hset(ctx context.Context, key string, value any, ttl 
 
 func (c *OAuth2StateCache) mapToOauth2State(result map[string]string) model.OAuth2State {
 	return model.OAuth2State{
-		State:        result["state"],
-		Scene:        model.Auth2Scene(result["scene"]),
-		RedirectPage: result["redirect_page"],
-		Platform:     result["platform"],
-		Used:         result["used"] == "true",
+		State:    result["state"],
+		Scene:    model.Auth2Scene(result["scene"]),
+		Platform: result["platform"],
+		Used:     result["used"] == "true",
 	}
 }

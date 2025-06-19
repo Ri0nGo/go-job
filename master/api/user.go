@@ -55,7 +55,9 @@ func (a *UserApi) RegisterRoutes(group *gin.RouterGroup) {
 
 		userGroup.POST("/bind/email/code_send", a.BindEmailCodeSend)
 		userGroup.POST("/bind/email", a.BindEmail)
-		userGroup.POST("/bind/oauth2", a.BindOAuth2)
+
+		userGroup.POST("/oauth2/bind", a.OAuth2Bind) // 通过用户名密码关联第三方账号
+		userGroup.POST("/oauth2/code", a.OAuth2Code)
 	}
 }
 
@@ -332,8 +334,8 @@ func (a *UserApi) BindEmailCodeSend(ctx *gin.Context) {
 	dto.NewJsonResp(ctx).Success()
 }
 
-// BindOAuth2 绑定oauth2, 都是从绑定页面来的
-func (a *UserApi) BindOAuth2(ctx *gin.Context) {
+// OAuth2Bind 绑定oauth2, 都是从绑定页面来的
+func (a *UserApi) OAuth2Bind(ctx *gin.Context) {
 	// 1. 解析参数
 	var req dto.ReqOAuth2Bind
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -369,6 +371,28 @@ func (a *UserApi) BindOAuth2(ctx *gin.Context) {
 		slog.Error("oauth2 bind failed", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.UserOAuth2Err)
 	}
+}
+
+// OAuth2Code 前端的回调页面通过code来获取后续的操作
+func (a *UserApi) OAuth2Code(ctx *gin.Context) {
+	type reqCode struct {
+		Code string `json:"code"`
+	}
+	var req reqCode
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		slog.Error("params parse error", "err", err)
+		dto.NewJsonResp(ctx).Success(dto.RespOAuth2Code{ // 此处统一返回0，前端通过Err来判断后续操作
+			RedirectPage: "/", // 默认跳转到首页
+			Err:          "参数错误",
+		})
+		return
+	}
+
+	resp := a.userService.OAuth2Code(ctx, req.Code)
+	if resp.Token != "" {
+		ctx.Header("Authorization", resp.Token)
+	}
+	dto.NewJsonResp(ctx).Success(resp)
 }
 
 // GetUserClaim 获取用户的UC信息

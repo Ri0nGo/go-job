@@ -8,7 +8,9 @@ import (
 	"go-job/internal/dto"
 	"go-job/internal/iface/oauth2"
 	"go-job/internal/model"
+	"go-job/internal/pkg/auth"
 	"go-job/internal/pkg/utils"
+	"go-job/master/pkg/config"
 	"go-job/master/repo"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -26,10 +28,10 @@ var (
 	ErrOAuth2UserDuplicate   = errors.New("该账号已经绑定过")
 )
 
-var sceneRedirectPath = map[model.Auth2Scene]string{
-	model.Auth2SceneSettingsPage: "/account/settings/security",
-	model.Auth2SceneLoginPage:    "/",
-}
+var (
+	accountSecurityPage = "/settings/profile"
+	userBindOAuth2Page  = "/oauth2/bind"
+)
 
 type IUserService interface {
 	GetUser(id int) (model.DomainUser, error)
@@ -41,7 +43,7 @@ type IUserService interface {
 	UserSecurity(uid int) (dto.RespUserSecurity, error)
 
 	UserBind(id int, email string) error
-	SaveState(ctx context.Context, state string, scene model.Auth2Scene, platform model.AuthType) error
+	SaveState(ctx context.Context, uid int, state string, scene model.Auth2Scene, platform model.AuthType) error
 	VerifyState(ctx context.Context, state string) (model.OAuth2State, error)
 
 	// UserOAuth2FromLogin 入参，key：认证唯一标识
@@ -49,12 +51,15 @@ type IUserService interface {
 	UserOAuth2FromLogin(ctx context.Context, key string, identity model.AuthIdentity) (model.DomainUser, int, error)
 	// BindOAuth2 绑定OAuth2
 	BindOAuth2FromSettings(ctx context.Context, authModel model.AuthIdentity) error
+	SaveOAuth2Code(ctx context.Context, code string, tempCode model.OAuth2TempCode)
 	OAuth2Bind(ctx context.Context, req dto.ReqOAuth2Bind) (model.DomainUser, error)
+
+	OAuth2Code(ctx context.Context, code string) dto.RespOAuth2Code
 }
 
 type UserService struct {
-	UserRepo repo.IUserRepo
-	stateSvc oauth2.IOAuth2StateCache
+	UserRepo    repo.IUserRepo
+	oauth2Cache oauth2.IOAuth2Cache
 }
 
 func (s *UserService) GetUser(id int) (model.DomainUser, error) {
@@ -104,19 +109,19 @@ func (s *UserService) UpdateUser(user model.DomainUser) error {
 }
 
 // SaveState 将state信息存储到redis 中
-func (s *UserService) SaveState(ctx context.Context, state string,
+func (s *UserService) SaveState(ctx context.Context, uid int, state string,
 	scene model.Auth2Scene, platform model.AuthType) error {
-	return s.stateSvc.SetState(ctx, state, model.OAuth2State{
-		State:        state,
-		Scene:        scene,
-		RedirectPage: sceneRedirectPath[scene],
-		Platform:     platform.String(),
-		Used:         false,
+	return s.oauth2Cache.SetState(ctx, state, model.OAuth2State{
+		Uid:      uid,
+		State:    state,
+		Scene:    scene,
+		Platform: platform.String(),
+		Used:     false,
 	})
 }
 
 func (s *UserService) VerifyState(ctx context.Context, state string) (model.OAuth2State, error) {
-	auth2State, err := s.stateSvc.GetState(ctx, state)
+	auth2State, err := s.oauth2Cache.GetState(ctx, state)
 	if err != nil { // 获取state 失败
 		return model.OAuth2State{}, err
 	}
@@ -170,7 +175,7 @@ func (s *UserService) UserOAuth2FromLogin(ctx context.Context, key string, ident
 			"name":     identity.Name,
 		}
 		// 将获取的用户信息存储到redis，方便用户绑定
-		if err = s.stateSvc.SetAuth(ctx, key, value, time.Minute*5); err != nil {
+		if err = s.oauth2Cache.SetAuth(ctx, key, value, time.Minute*5); err != nil {
 			return model.DomainUser{}, 0, err
 		}
 		return model.DomainUser{}, 0, nil
@@ -189,24 +194,30 @@ func (s *UserService) BindOAuth2FromSettings(ctx context.Context, authModel mode
 // OAuth2Bind 绑定第三方账户
 func (s *UserService) OAuth2Bind(ctx context.Context, req dto.ReqOAuth2Bind) (model.DomainUser, error) {
 	// 查询key 是否过期
-	auth, err := s.stateSvc.GetAuth(ctx, req.Key)
+	val, err := s.oauth2Cache.GetAuth(ctx, req.Code)
 	if err != nil {
-		slog.Error("get auth key failed", "key", req.Key, "err", err)
+		slog.Error("get auth key failed", "key", req.Code, "err", err)
 		return model.DomainUser{}, ErrOAuth2KeyIsExpired
 	}
+
+	codeData := MapToTempCode(val)
+	if codeData.Err != "" {
+		return model.DomainUser{}, errors.New(codeData.Err)
+	}
+	authType, err := platformToAuthType(codeData.Platform)
+	if err != nil {
+		slog.Error("auth type covert to int failed", "platform", codeData.Platform, "err", err)
+		return model.DomainUser{}, err
+	}
+
 	// 验证用户名和密码
 	domainUser, err := s.Login(req.Username, req.Password)
 	if err != nil {
 		return model.DomainUser{}, err
 	}
-	t, err := strconv.Atoi(auth["type"])
-	if err != nil {
-		slog.Error("auth type covert to int failed", "type", auth["type"])
-		return model.DomainUser{}, err
-	}
+
 	// 校验用户是否已经绑定过
-	authType := model.AuthType(t)
-	authModel, err := s.UserRepo.QueryAuth(authType, auth["identity"])
+	authModel, err := s.UserRepo.QueryAuth(authType, codeData.Identify)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) { // 查询异常了
 		return model.DomainUser{}, err
 	}
@@ -217,12 +228,158 @@ func (s *UserService) OAuth2Bind(ctx context.Context, req dto.ReqOAuth2Bind) (mo
 	if err = s.UserRepo.CreateAuth(&model.AuthIdentity{
 		UserID:   domainUser.Id,
 		Type:     authType,
-		Identity: auth["identity"],
-		Name:     auth["name"],
+		Identity: codeData.Identify,
+		Name:     codeData.Name,
 	}); err != nil {
 		return model.DomainUser{}, err
 	}
 	return domainUser, nil
+}
+
+func (s *UserService) SaveOAuth2Code(ctx context.Context, code string, tempCode model.OAuth2TempCode) {
+	if err := s.oauth2Cache.SetAuth(ctx, code, tempCodeToMap(tempCode), time.Minute*5); err != nil {
+		slog.Error("save oauth2 code failed", "err", err)
+	}
+}
+
+func (s *UserService) OAuth2Code(ctx context.Context, code string) dto.RespOAuth2Code {
+	var result dto.RespOAuth2Code
+	val, err := s.oauth2Cache.GetAuth(ctx, code)
+	if err != nil {
+		slog.Error("get oauth2 code failed", "err", err)
+		return dto.RespOAuth2Code{
+			RedirectPage: "/",
+			Err:          "认证超时",
+		}
+	}
+
+	codeData := MapToTempCode(val)
+	if codeData.Err != "" {
+		result = dto.RespOAuth2Code{
+			RedirectPage: "/",
+			Err:          codeData.Err,
+		}
+		return result
+	}
+	authType, err := platformToAuthType(codeData.Platform)
+	if err != nil {
+		result = dto.RespOAuth2Code{
+			RedirectPage: "/",
+			Err:          codeData.Err,
+		}
+		return result
+	}
+
+	switch codeData.Scene {
+	case model.Auth2SceneAccountSecurityPage:
+		if err = s.handleOAuth2AccountSecurity(authType, codeData); err != nil {
+			return dto.RespOAuth2Code{
+				RedirectPage: "/",
+				Err:          codeData.Err,
+			}
+		}
+		result = dto.RespOAuth2Code{
+			RedirectPage: accountSecurityPage,
+		}
+	case model.Auth2SceneLoginPage:
+		result = s.handleOAuth2Login(authType, codeData)
+	default: // 理论上不可能走到这里
+		slog.Error("unknown auth scene", "scene", codeData.Scene)
+		result = dto.RespOAuth2Code{
+			RedirectPage: "/",
+			Err:          codeData.Err,
+		}
+	}
+
+	result.Platform = codeData.Platform
+	return result
+}
+
+func tempCodeToMap(tempCode model.OAuth2TempCode) map[string]string {
+	return map[string]string{
+		"uid":      strconv.Itoa(tempCode.Uid),
+		"name":     tempCode.Name,
+		"identify": tempCode.Identify,
+		"platform": tempCode.Platform,
+		"scene":    string(tempCode.Scene),
+		"err":      tempCode.Err,
+	}
+}
+
+func MapToTempCode(val map[string]string) model.OAuth2TempCode {
+	uid, err := strconv.Atoi(val["uid"])
+	if err != nil {
+		slog.Error("convert uid to int failed", "uid", val["uid"])
+	}
+	return model.OAuth2TempCode{
+		Uid:      uid,
+		Name:     val["name"],
+		Identify: val["identify"],
+		Platform: val["platform"],
+		Scene:    model.Auth2Scene(val["scene"]),
+		Err:      val["err"],
+	}
+}
+
+func platformToAuthType(platform string) (model.AuthType, error) {
+	switch platform {
+	case model.AuthTypeQQ.String():
+		return model.AuthTypeQQ, nil
+	case model.AuthTypeGithub.String():
+		return model.AuthTypeGithub, nil
+	default:
+		return 0, errors.New("unknown auth type")
+	}
+}
+
+func (s *UserService) handleOAuth2AccountSecurity(authType model.AuthType, codeData model.OAuth2TempCode) error {
+	_, err := s.UserRepo.QueryAuth(authType, codeData.Identify)
+	switch err {
+	case nil: // 第三方账号已经被使用了
+		return errors.New("该第三方账号已被使用，无法重复绑定")
+	case gorm.ErrRecordNotFound: // 第三方账号没有被使用过
+		if err = s.UserRepo.CreateAuth(&model.AuthIdentity{
+			UserID:   codeData.Uid,
+			Type:     authType,
+			Identity: codeData.Identify,
+			Name:     codeData.Name,
+		}); err != nil {
+			slog.Error("save auth identity failed", "err", err)
+			return errors.New("系统错误")
+		}
+		return nil
+	default: // 内部错误或其他
+		slog.Error("query auth failed", "err", err)
+		return errors.New("系统错误")
+	}
+}
+
+func (s *UserService) handleOAuth2Login(authType model.AuthType, codeData model.OAuth2TempCode) dto.RespOAuth2Code {
+	authIdentity, err := s.UserRepo.QueryAuth(authType, codeData.Identify)
+	switch err {
+	case gorm.ErrRecordNotFound: // 第三方账号未绑定过系统用户
+		return dto.RespOAuth2Code{
+			RedirectPage: userBindOAuth2Page,
+		}
+	case nil: // 已绑定过系统用户，直接登录
+		token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateUserToken(model.DomainUser{Id: authIdentity.UserID})
+		if err != nil {
+			slog.Error("generate user token failed", "err", err)
+			return dto.RespOAuth2Code{
+				RedirectPage: "/",
+				Err:          "系统错误",
+			}
+		}
+		return dto.RespOAuth2Code{
+			RedirectPage: "/",
+			Token:        token,
+		}
+	default:
+		return dto.RespOAuth2Code{
+			RedirectPage: "/",
+			Err:          "系统错误",
+		}
+	}
 }
 
 func (s *UserService) UserSecurity(uid int) (dto.RespUserSecurity, error) {
@@ -288,9 +445,9 @@ func (s *UserService) generateNotDuplicatedUserName() string {
 	return "用户" + strconv.Itoa(int(randomId))
 }
 
-func NewUserService(userRepo repo.IUserRepo, stateSvc oauth2.IOAuth2StateCache) IUserService {
+func NewUserService(userRepo repo.IUserRepo, oauth2Cache oauth2.IOAuth2Cache) IUserService {
 	return &UserService{
-		UserRepo: userRepo,
-		stateSvc: stateSvc,
+		UserRepo:    userRepo,
+		oauth2Cache: oauth2Cache,
 	}
 }

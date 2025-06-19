@@ -11,7 +11,7 @@ type IOAuth2Service interface {
 	GetAuthIdentity(ctx context.Context, code string) (model.AuthIdentity, error)
 }
 
-type IOAuth2StateCache interface {
+type IOAuth2Cache interface {
 	SetState(ctx context.Context, state string, oauth2State model.OAuth2State) error
 	SetAuth(ctx context.Context, key string, val map[string]string, ttl time.Duration) error
 	GetState(ctx context.Context, state string) (model.OAuth2State, error)

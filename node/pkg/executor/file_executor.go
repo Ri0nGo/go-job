@@ -32,7 +32,6 @@ func (f *FileExecutor) Run() {
 	if f.onResultChange != nil {
 		f.onResultChange(f.buildJobExecResult(output, err))
 	}
-
 }
 
 func (f *FileExecutor) BeforeExecute() {
