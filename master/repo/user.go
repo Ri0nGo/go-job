@@ -21,6 +21,7 @@ type IUserRepo interface {
 	QueryAuth(authType model.AuthType, identity string) (model.AuthIdentity, error)
 	QueryUserSecurity(uid int) (model.UserAuthInfo, error)
 	CreateAuth(auth *model.AuthIdentity) error
+	DeleteAuthByUid(uid int, authType model.AuthType) error
 }
 
 type UserRepo struct {
@@ -106,6 +107,12 @@ func (j *UserRepo) QueryUserSecurity(uid int) (model.UserAuthInfo, error) {
 
 func (j *UserRepo) CreateAuth(auth *model.AuthIdentity) error {
 	return j.mysqlDB.Create(auth).Error
+}
+
+func (j *UserRepo) DeleteAuthByUid(uid int, authType model.AuthType) error {
+	return j.mysqlDB.Where("user_id = ? and type = ?", uid, authType).
+		Delete(&model.AuthIdentity{}).
+		Error
 }
 
 func NewUserRepo(mysqlDB *gorm.DB) IUserRepo {

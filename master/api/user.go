@@ -57,6 +57,7 @@ func (a *UserApi) RegisterRoutes(group *gin.RouterGroup) {
 		userGroup.POST("/bind/email", a.BindEmail)
 
 		userGroup.POST("/oauth2/bind", a.OAuth2Bind) // 通过用户名密码关联第三方账号
+		userGroup.POST("/oauth2/unbind", a.OAuth2UnBind)
 		userGroup.POST("/oauth2/code", a.OAuth2Code)
 	}
 }
@@ -371,6 +372,29 @@ func (a *UserApi) OAuth2Bind(ctx *gin.Context) {
 		slog.Error("oauth2 bind failed", "err", err)
 		dto.NewJsonResp(ctx).Fail(dto.UserOAuth2Err)
 	}
+}
+
+func (a *UserApi) OAuth2UnBind(ctx *gin.Context) {
+	var req dto.ReqOAuth2UnBind
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		slog.Error("params parse error", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
+		return
+	}
+
+	uc, err := GetUserClaim(ctx)
+	if err != nil {
+		slog.Error("get user claim err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
+		return
+	}
+
+	if err := a.userService.OAuth2UnBind(ctx, uc.Uid, req); err != nil {
+		slog.Error("unbind user err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.ServerError)
+		return
+	}
+	dto.NewJsonResp(ctx).Success()
 }
 
 // OAuth2Code 前端的回调页面通过code来获取后续的操作

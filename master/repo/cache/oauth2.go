@@ -6,6 +6,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go-job/internal/iface/oauth2"
 	"go-job/internal/model"
+	"log/slog"
 	"strconv"
 	"time"
 )
@@ -94,7 +95,12 @@ func (c *OAuth2StateCache) hset(ctx context.Context, key string, value any, ttl 
 }
 
 func (c *OAuth2StateCache) mapToOauth2State(result map[string]string) model.OAuth2State {
+	uid, err := strconv.Atoi(result["uid"])
+	if err != nil {
+		slog.Error("convert uid to int error", "uid str", result["uid"])
+	}
 	return model.OAuth2State{
+		Uid:      uid,
 		State:    result["state"],
 		Scene:    model.Auth2Scene(result["scene"]),
 		Platform: result["platform"],

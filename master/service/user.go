@@ -53,6 +53,7 @@ type IUserService interface {
 	BindOAuth2FromSettings(ctx context.Context, authModel model.AuthIdentity) error
 	SaveOAuth2Code(ctx context.Context, code string, tempCode model.OAuth2TempCode)
 	OAuth2Bind(ctx context.Context, req dto.ReqOAuth2Bind) (model.DomainUser, error)
+	OAuth2UnBind(ctx context.Context, uid int, req dto.ReqOAuth2UnBind) error
 
 	OAuth2Code(ctx context.Context, code string) dto.RespOAuth2Code
 }
@@ -193,7 +194,7 @@ func (s *UserService) BindOAuth2FromSettings(ctx context.Context, authModel mode
 
 // OAuth2Bind 绑定第三方账户
 func (s *UserService) OAuth2Bind(ctx context.Context, req dto.ReqOAuth2Bind) (model.DomainUser, error) {
-	// 查询key 是否过期
+	// 查询code 是否过期
 	val, err := s.oauth2Cache.GetAuth(ctx, req.Code)
 	if err != nil {
 		slog.Error("get auth key failed", "key", req.Code, "err", err)
@@ -234,6 +235,10 @@ func (s *UserService) OAuth2Bind(ctx context.Context, req dto.ReqOAuth2Bind) (mo
 		return model.DomainUser{}, err
 	}
 	return domainUser, nil
+}
+
+func (s *UserService) OAuth2UnBind(ctx context.Context, uid int, req dto.ReqOAuth2UnBind) error {
+	return s.UserRepo.DeleteAuthByUid(uid, req.AuthType)
 }
 
 func (s *UserService) SaveOAuth2Code(ctx context.Context, code string, tempCode model.OAuth2TempCode) {
