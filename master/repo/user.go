@@ -16,8 +16,6 @@ type IUserRepo interface {
 	Delete(id int) error
 	QueryList(page model.Page) (model.Page, error)
 
-	// oauth2
-	QueryUserByIdentity(authType model.AuthType, identity string) (model.User, error)
 	QueryAuth(authType model.AuthType, identity string) (model.AuthIdentity, error)
 	QueryUserSecurity(uid int) (model.UserAuthInfo, error)
 	CreateAuth(auth *model.AuthIdentity) error
@@ -64,17 +62,6 @@ func (j *UserRepo) QueryList(page model.Page) (model.Page, error) {
 func (j *UserRepo) QueryByUsername(username string) (model.User, error) {
 	var user model.User
 	err := j.mysqlDB.Where("username = ?", username).First(&user).Error
-	return user, err
-}
-
-func (j *UserRepo) QueryUserByIdentity(authType model.AuthType, identity string) (model.User, error) {
-	// select t1.* from user t1 join auth_identity t2 on t1.id = t2.user_id and t2.identity = identity and t2.type = type
-	var user model.User
-	err := j.mysqlDB.Table("user AS t1").
-		Select("t1.*").
-		Joins("JOIN auth_identity AS t2 ON t1.id = t2.user_id").
-		Where("t2.type = ? and t2.identity = ?", authType, identity).
-		First(&user).Error
 	return user, err
 }
 

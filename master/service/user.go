@@ -46,11 +46,6 @@ type IUserService interface {
 	SaveState(ctx context.Context, uid int, state string, scene model.Auth2Scene, platform model.AuthType) error
 	VerifyState(ctx context.Context, state string) (model.OAuth2State, error)
 
-	// UserOAuth2FromLogin 入参，key：认证唯一标识
-	// 返回 用户实例，状态(0：用户不存在，1：存在，2 位置错误)，具体错误
-	UserOAuth2FromLogin(ctx context.Context, key string, identity model.AuthIdentity) (model.DomainUser, int, error)
-	// BindOAuth2 绑定OAuth2
-	BindOAuth2FromSettings(ctx context.Context, authModel model.AuthIdentity) error
 	SaveOAuth2Code(ctx context.Context, code string, tempCode model.OAuth2TempCode)
 	OAuth2Bind(ctx context.Context, req dto.ReqOAuth2Bind) (model.DomainUser, error)
 	OAuth2UnBind(ctx context.Context, uid int, req dto.ReqOAuth2UnBind) error
@@ -162,34 +157,6 @@ func (s *UserService) UserBind(id int, email string) error {
 		}
 	}
 	return err
-}
-
-// UserOAuth2FromLogin 用户关联第三方账户（登录授权界面）
-func (s *UserService) UserOAuth2FromLogin(ctx context.Context, key string, identity model.AuthIdentity) (model.DomainUser, int, error) {
-	user, err := s.UserRepo.QueryUserByIdentity(identity.Type, identity.Identity)
-	switch err {
-	case gorm.ErrRecordNotFound: // 第三方账户未绑定已存在用户
-		// todo 这里应该封装一下
-		value := map[string]string{
-			"identity": identity.Identity,
-			"type":     strconv.Itoa(int(identity.Type)),
-			"name":     identity.Name,
-		}
-		// 将获取的用户信息存储到redis，方便用户绑定
-		if err = s.oauth2Cache.SetAuth(ctx, key, value, time.Minute*5); err != nil {
-			return model.DomainUser{}, 0, err
-		}
-		return model.DomainUser{}, 0, nil
-	case nil: // 用户已存在，则直接登录
-		return s.userToDomainUser(user), 1, nil
-	default:
-		return model.DomainUser{}, 2, err
-	}
-}
-
-// BindOAuth2FromSettings 用户绑定第三方账户（账号安全界面）
-func (s *UserService) BindOAuth2FromSettings(ctx context.Context, authModel model.AuthIdentity) error {
-	return s.UserRepo.CreateAuth(&authModel)
 }
 
 // OAuth2Bind 绑定第三方账户
