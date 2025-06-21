@@ -279,8 +279,8 @@ func (s *UserService) OAuth2Code(ctx context.Context, code string) dto.RespOAuth
 	case model.Auth2SceneAccountSecurityPage:
 		if err = s.handleOAuth2AccountSecurity(authType, codeData); err != nil {
 			return dto.RespOAuth2Code{
-				RedirectPage: "/",
-				Err:          codeData.Err,
+				RedirectPage: accountSecurityPage,
+				Err:          err.Error(),
 			}
 		}
 		result = dto.RespOAuth2Code{
