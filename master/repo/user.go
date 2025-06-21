@@ -79,7 +79,7 @@ func (j *UserRepo) QueryUserSecurity(uid int) (model.UserAuthInfo, error) {
 		return model.UserAuthInfo{}, err
 	}
 	var auths []model.AuthIdentity
-	err = j.mysqlDB.Where("user_id = ?", uid).First(&auths).Error
+	err = j.mysqlDB.Where("user_id = ?", uid).Find(&auths).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return model.UserAuthInfo{}, err
 	}
