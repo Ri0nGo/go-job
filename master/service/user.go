@@ -233,6 +233,14 @@ func (s *UserService) OAuth2Code(ctx context.Context, code string) dto.RespOAuth
 		}
 		return result
 	}
+
+	if codeData.Used {
+		return dto.RespOAuth2Code{
+			RedirectPage: "/",
+			Err:          "认证授权已经被使用过了",
+		}
+	}
+
 	authType, err := platformToAuthType(codeData.Platform)
 	if err != nil {
 		result = dto.RespOAuth2Code{
@@ -262,8 +270,15 @@ func (s *UserService) OAuth2Code(ctx context.Context, code string) dto.RespOAuth
 			Err:          codeData.Err,
 		}
 	}
-
 	result.Platform = codeData.Platform
+	err = s.oauth2Cache.MarkUsed(ctx, code, model.OAuth2AuthFlag)
+	if err != nil {
+		slog.Error("save oauth2 code failed", "err", err)
+		return dto.RespOAuth2Code{
+			RedirectPage: "/",
+			Err:          "系统错误",
+		}
+	}
 	return result
 }
 
@@ -274,6 +289,7 @@ func tempCodeToMap(tempCode model.OAuth2TempCode) map[string]string {
 		"identify": tempCode.Identify,
 		"platform": tempCode.Platform,
 		"scene":    string(tempCode.Scene),
+		"used":     strconv.FormatBool(tempCode.Used),
 		"err":      tempCode.Err,
 	}
 }
@@ -289,6 +305,7 @@ func MapToTempCode(val map[string]string) model.OAuth2TempCode {
 		Identify: val["identify"],
 		Platform: val["platform"],
 		Scene:    model.Auth2Scene(val["scene"]),
+		Used:     val["true"] == "true",
 		Err:      val["err"],
 	}
 }

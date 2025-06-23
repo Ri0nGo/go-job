@@ -16,5 +16,5 @@ type IOAuth2Cache interface {
 	SetAuth(ctx context.Context, key string, val map[string]string, ttl time.Duration) error
 	GetState(ctx context.Context, state string) (model.OAuth2State, error)
 	GetAuth(ctx context.Context, key string) (map[string]string, error)
-	MarkUsed(ctx context.Context, state string) error
+	MarkUsed(ctx context.Context, state string, flag model.OAuth2Flag) error
 }

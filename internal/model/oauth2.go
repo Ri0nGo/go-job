@@ -1,5 +1,12 @@
 package model
 
+type OAuth2Flag string
+
+var (
+	OAuth2StateFlag OAuth2Flag = "state"
+	OAuth2AuthFlag  OAuth2Flag = "auth"
+)
+
 // OAuth2State 开始请求时的信息
 type OAuth2State struct {
 	Uid      int
@@ -17,5 +24,6 @@ type OAuth2TempCode struct {
 	Platform     string     `json:"platform"` // 第三方平台的名称
 	RedirectPage string     `json:"redirect_page"`
 	Scene        Auth2Scene `json:"scene"`
+	Used         bool       `json:"used"`
 	Err          string     `json:"err"`
 }

@@ -65,8 +65,17 @@ func (c *OAuth2StateCache) GetAuth(ctx context.Context, key string) (map[string]
 }
 
 // MarkUsed 将state标记为已使用
-func (c *OAuth2StateCache) MarkUsed(ctx context.Context, state string) error {
-	return c.redisCache.HSet(ctx, c.getStateKey(state), "used", "true").Err()
+func (c *OAuth2StateCache) MarkUsed(ctx context.Context, state string, flag model.OAuth2Flag) error {
+	var key string
+	switch flag {
+	case model.OAuth2StateFlag:
+		key = c.getStateKey(state)
+	case model.OAuth2AuthFlag:
+		key = c.getAuthKey(state)
+	default:
+		return errors.New("invalid flag")
+	}
+	return c.redisCache.HSet(ctx, key, "used", "true").Err()
 }
 
 func (c *OAuth2StateCache) getStateKey(state string) string {

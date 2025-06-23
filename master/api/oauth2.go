@@ -273,6 +273,7 @@ func (a *OAuth2Api) saveOAuth2CodeData(ctx *gin.Context, code string, authModel 
 		Identify: authModel.Identity,
 		Platform: oauth2State.Platform,
 		Scene:    oauth2State.Scene,
+		Used:     false,
 		Err:      errMsg,
 	}
 	a.userSvc.SaveOAuth2Code(ctx, code, codeData)
