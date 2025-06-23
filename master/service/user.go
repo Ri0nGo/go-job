@@ -234,6 +234,16 @@ func (s *UserService) OAuth2Code(ctx context.Context, code string) dto.RespOAuth
 		return result
 	}
 
+	// 标记code已使用
+	err = s.oauth2Cache.MarkUsed(ctx, code, model.OAuth2AuthFlag)
+	if err != nil {
+		slog.Error("save oauth2 code failed", "err", err)
+		return dto.RespOAuth2Code{
+			RedirectPage: "/",
+			Err:          "系统错误",
+		}
+	}
+
 	switch codeData.Scene {
 	case model.Auth2SceneAccountSecurityPage:
 		if err = s.handleOAuth2AccountSecurity(authType, codeData); err != nil {
@@ -256,25 +266,6 @@ func (s *UserService) OAuth2Code(ctx context.Context, code string) dto.RespOAuth
 	}
 	result.Platform = codeData.Platform
 
-	// 标记code已使用
-	err = s.oauth2Cache.MarkUsed(ctx, code, model.OAuth2AuthFlag)
-	if err != nil {
-		slog.Error("save oauth2 code failed", "err", err)
-		return dto.RespOAuth2Code{
-			RedirectPage: "/",
-			Err:          "系统错误",
-		}
-	}
-
-	// 更新登录时间
-	if err = s.UserRepo.UpdateDataById(codeData.Uid, map[string]any{
-		"login_time": time.Now(),
-	}); err != nil {
-		return dto.RespOAuth2Code{
-			RedirectPage: "/",
-			Err:          "系统错误",
-		}
-	}
 	return result
 }
 
@@ -368,6 +359,14 @@ func (s *UserService) handleOAuth2Login(authType model.AuthType, codeData model.
 		token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateUserToken(model.DomainUser{Id: authIdentity.UserID})
 		if err != nil {
 			slog.Error("generate user token failed", "err", err)
+			return dto.RespOAuth2Code{
+				RedirectPage: "/",
+				Err:          "系统错误",
+			}
+		}
+		// 更新登录时间
+		if err = s.UserRepo.UpdateLoginTimeByid(authIdentity.UserID); err != nil {
+			slog.Error("update user login time failed", "err", err)
 			return dto.RespOAuth2Code{
 				RedirectPage: "/",
 				Err:          "系统错误",

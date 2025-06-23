@@ -5,6 +5,7 @@ import (
 	"go-job/internal/model"
 	"go-job/internal/pkg/paginate"
 	"gorm.io/gorm"
+	"time"
 )
 
 type IUserRepo interface {
@@ -13,6 +14,7 @@ type IUserRepo interface {
 	Insert(*model.User) error
 	Update(model.User) error
 	UpdateDataById(int, map[string]any) error
+	UpdateLoginTimeByid(id int) error
 	Delete(id int) error
 	QueryList(page model.Page) (model.Page, error)
 
@@ -99,6 +101,13 @@ func (j *UserRepo) CreateAuth(auth *model.AuthIdentity) error {
 func (j *UserRepo) DeleteAuthByUid(uid int, authType model.AuthType) error {
 	return j.mysqlDB.Where("user_id = ? and type = ?", uid, authType).
 		Delete(&model.AuthIdentity{}).
+		Error
+}
+
+func (j *UserRepo) UpdateLoginTimeByid(id int) error {
+	return j.mysqlDB.Model(&model.User{}).
+		Where("id = ?", id).
+		Update("login_time", time.Now()).
 		Error
 }
 
