@@ -216,28 +216,12 @@ func (s *UserService) SaveOAuth2Code(ctx context.Context, code string, tempCode 
 
 func (s *UserService) OAuth2Code(ctx context.Context, code string) dto.RespOAuth2Code {
 	var result dto.RespOAuth2Code
-	val, err := s.oauth2Cache.GetAuth(ctx, code)
+
+	codeData, err := s.verifyTempCode(context.Background(), code)
 	if err != nil {
-		slog.Error("get oauth2 code failed", "err", err)
 		return dto.RespOAuth2Code{
 			RedirectPage: "/",
-			Err:          "认证超时",
-		}
-	}
-
-	codeData := MapToTempCode(val)
-	if codeData.Err != "" {
-		result = dto.RespOAuth2Code{
-			RedirectPage: "/",
-			Err:          codeData.Err,
-		}
-		return result
-	}
-
-	if codeData.Used {
-		return dto.RespOAuth2Code{
-			RedirectPage: "/",
-			Err:          "认证授权已经被使用过了",
+			Err:          err.Error(),
 		}
 	}
 
@@ -265,12 +249,14 @@ func (s *UserService) OAuth2Code(ctx context.Context, code string) dto.RespOAuth
 		result = s.handleOAuth2Login(authType, codeData)
 	default: // 理论上不可能走到这里
 		slog.Error("unknown auth scene", "scene", codeData.Scene)
-		result = dto.RespOAuth2Code{
+		return dto.RespOAuth2Code{
 			RedirectPage: "/",
 			Err:          codeData.Err,
 		}
 	}
 	result.Platform = codeData.Platform
+
+	// 标记code已使用
 	err = s.oauth2Cache.MarkUsed(ctx, code, model.OAuth2AuthFlag)
 	if err != nil {
 		slog.Error("save oauth2 code failed", "err", err)
@@ -279,7 +265,35 @@ func (s *UserService) OAuth2Code(ctx context.Context, code string) dto.RespOAuth
 			Err:          "系统错误",
 		}
 	}
+
+	// 更新登录时间
+	if err = s.UserRepo.UpdateDataById(codeData.Uid, map[string]any{
+		"login_time": time.Now(),
+	}); err != nil {
+		return dto.RespOAuth2Code{
+			RedirectPage: "/",
+			Err:          "系统错误",
+		}
+	}
 	return result
+}
+
+func (s *UserService) verifyTempCode(ctx context.Context, code string) (model.OAuth2TempCode, error) {
+	val, err := s.oauth2Cache.GetAuth(ctx, code)
+	if err != nil {
+		slog.Error("get oauth2 code failed", "err", err)
+		return model.OAuth2TempCode{}, errors.New("认证超时")
+	}
+
+	codeData := MapToTempCode(val)
+	if codeData.Err != "" {
+		return model.OAuth2TempCode{}, errors.New(codeData.Err)
+	}
+
+	if codeData.Used {
+		return model.OAuth2TempCode{}, errors.New("认证授权码已经被使用了")
+	}
+	return codeData, nil
 }
 
 func tempCodeToMap(tempCode model.OAuth2TempCode) map[string]string {
