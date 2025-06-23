@@ -109,6 +109,7 @@ func (j *UserRepo) UpdateLoginTimeByid(id int) error {
 		"login_time": time.Now(),
 	}
 	return j.mysqlDB.Model(&model.User{}).
+		Omit("updated_time").
 		Where("id = ?", id).
 		Updates(data).
 		Error
