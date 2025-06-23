@@ -49,6 +49,7 @@ const (
 	UploadFileError   = 1201
 	FileExtNotSupport = 1202
 	FileValidError    = 1203
+	DownloadFileError = 1204
 )
 
 var (
@@ -112,6 +113,7 @@ var msgMap = map[int]string{
 	FileNotExist:      "file not exist",
 	FileExtNotSupport: "file ext not support",
 	FileValidError:    "file valid error",
+	DownloadFileError: "download file error",
 }
 
 func getMsgWithCode(code int) string {

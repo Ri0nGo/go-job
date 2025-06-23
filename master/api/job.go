@@ -13,6 +13,7 @@ import (
 	"go-job/master/service"
 	"gorm.io/gorm"
 	"log/slog"
+	"net/url"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -39,6 +40,7 @@ func (a *JobApi) RegisterRoutes(group *gin.RouterGroup) {
 		jobGroup.PUT("/update", a.UpdateJob)
 		jobGroup.DELETE("/:id", a.DeleteJob)
 		jobGroup.POST("/upload", a.UploadFile)
+		jobGroup.GET("/download", a.DownloadFile)
 	}
 }
 
@@ -217,4 +219,38 @@ func (a *JobApi) UploadFile(ctx *gin.Context) {
 	dto.NewJsonResp(ctx).Success(map[string]string{
 		"key": uuidKey,
 	})
+}
+
+func (a *JobApi) DownloadFile(ctx *gin.Context) {
+	idStr := ctx.Query("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
+		return
+	}
+	uc, err := GetUserClaim(ctx)
+	if err != nil {
+		slog.Error("get user claim err", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.UnauthorizedError)
+		return
+	}
+
+	job, err := a.JobService.GetJob(uc.Uid, id)
+	if err != nil {
+		slog.Error("get job err:", "err", err)
+		dto.NewJsonResp(ctx).Fail(dto.FileNotExist)
+		return
+	}
+
+	filePath := job.Internal.FileMeta.UUIDFileName
+	filename := job.Internal.FileMeta.Filename
+	fullPath := config.App.Data.UploadJobDir + "/" + filePath
+
+	// 设置响应头
+	ctx.Writer.Header().Set("Content-Type", "application/octet-stream")
+	ctx.Writer.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, url.QueryEscape(filename)))
+	ctx.Writer.Header().Set("Content-Transfer-Encoding", "binary")
+	ctx.Writer.Header().Set("Cache-Control", "no-cache")
+
+	ctx.File(fullPath)
 }
