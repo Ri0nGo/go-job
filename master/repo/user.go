@@ -105,9 +105,12 @@ func (j *UserRepo) DeleteAuthByUid(uid int, authType model.AuthType) error {
 }
 
 func (j *UserRepo) UpdateLoginTimeByid(id int) error {
+	data := map[string]any{
+		"login_time": time.Now(),
+	}
 	return j.mysqlDB.Model(&model.User{}).
 		Where("id = ?", id).
-		Update("login_time", time.Now()).
+		Updates(data).
 		Error
 }
 
