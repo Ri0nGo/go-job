@@ -419,6 +419,7 @@ func (a *UserApi) OAuth2Code(ctx *gin.Context) {
 	if resp.Token != "" {
 		ctx.Header("Authorization", resp.Token)
 	}
+	ctx.Set("user", &model.UserClaims{Uid: resp.UID})
 	dto.NewJsonResp(ctx).Success(resp)
 }
 

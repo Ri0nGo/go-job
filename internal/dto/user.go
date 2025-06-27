@@ -28,4 +28,5 @@ type RespOAuth2Code struct {
 	RedirectPage string `json:"redirect_page"`
 	Platform     string `json:"platform"`
 	Token        string `json:"-"` // 默认放在Header中
+	UID          int    `json:"-"`
 }

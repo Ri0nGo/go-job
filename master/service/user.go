@@ -265,6 +265,7 @@ func (s *UserService) OAuth2Code(ctx context.Context, code string) dto.RespOAuth
 		}
 	}
 	result.Platform = codeData.Platform
+	result.UID = codeData.Uid
 
 	return result
 }
