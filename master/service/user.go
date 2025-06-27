@@ -265,7 +265,6 @@ func (s *UserService) OAuth2Code(ctx context.Context, code string) dto.RespOAuth
 		}
 	}
 	result.Platform = codeData.Platform
-	result.UID = codeData.Uid
 
 	return result
 }
@@ -376,6 +375,7 @@ func (s *UserService) handleOAuth2Login(authType model.AuthType, codeData model.
 		return dto.RespOAuth2Code{
 			RedirectPage: "/",
 			Token:        token,
+			UID:          authIdentity.UserID,
 		}
 	default:
 		return dto.RespOAuth2Code{
