@@ -30,7 +30,7 @@ const (
 	OperationDescAddUser             = "新增用户"
 	OperationDescDeleteUser          = "删除用户"
 	OperationDescUpdateUser          = "更新用户"
-	OperationDescLogin               = "登录"
+	OperationDescLogin               = "账号密码登录"
 	OperationDescOAuth2Bind          = "绑定第三方账号"
 	OperationDescOAuth2UnBind        = "解绑第三方账号"
 	OperationDescSendEmailCode       = "发生邮箱验证码"
