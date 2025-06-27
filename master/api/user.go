@@ -12,6 +12,7 @@ import (
 	"go-job/internal/pkg/consts"
 	"go-job/internal/pkg/utils"
 	"go-job/master/pkg/config"
+	"go-job/master/pkg/middleware"
 	"go-job/master/repo/cache"
 	"go-job/master/service"
 	"gorm.io/gorm"
@@ -47,18 +48,18 @@ func (a *UserApi) RegisterRoutes(group *gin.RouterGroup) {
 		userGroup.GET("", a.GetUserList)
 		//userGroup.GET("/:id", a.GetUser)  // 禁止查询其他用户
 		userGroup.GET("/profile", a.Profile)
-		userGroup.POST("/add", a.AddUser)
-		userGroup.PUT("/update", a.UpdateUser)
-		userGroup.DELETE("/:id", a.DeleteUser)
-		userGroup.POST("/login", a.Login)
+		userGroup.POST("/add", middleware.OperationLog(middleware.OperationDescAddUser), a.AddUser)
+		userGroup.PUT("/update", middleware.OperationLog(middleware.OperationDescUpdateUser), a.UpdateUser)
+		userGroup.DELETE("/:id", middleware.OperationLog(middleware.OperationDescDeleteUser), a.DeleteUser)
+		userGroup.POST("/login", middleware.OperationLog(middleware.OperationDescLogin), a.Login)
 		userGroup.GET("/security", a.Security)
 
-		userGroup.POST("/bind/email/code_send", a.BindEmailCodeSend)
-		userGroup.POST("/bind/email", a.BindEmail)
+		userGroup.POST("/bind/email/code_send", middleware.OperationLog(middleware.OperationDescSendEmailCode), a.BindEmailCodeSend)
+		userGroup.POST("/bind/email", middleware.OperationLog(middleware.OperationDescBindEmail), a.BindEmail)
 
-		userGroup.POST("/oauth2/bind", a.OAuth2Bind) // 通过用户名密码关联第三方账号
-		userGroup.POST("/oauth2/unbind", a.OAuth2UnBind)
-		userGroup.POST("/oauth2/code", a.OAuth2Code)
+		userGroup.POST("/oauth2/bind", middleware.OperationLog(middleware.OperationDescOAuth2Bind), a.OAuth2Bind) // 通过用户名密码关联第三方账号
+		userGroup.POST("/oauth2/unbind", middleware.OperationLog(middleware.OperationDescOAuth2UnBind), a.OAuth2UnBind)
+		userGroup.POST("/oauth2/code", middleware.OperationLog(middleware.OperationDescOAuth2Login), a.OAuth2Code)
 	}
 }
 
@@ -228,13 +229,15 @@ func (a *UserApi) Login(ctx *gin.Context) {
 	domainUser, err := a.userService.Login(req.Username, req.Password)
 	switch err {
 	case nil:
-		token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateToken(UserDomainToClaim(domainUser))
+		uc := UserDomainToClaim(domainUser)
+		token, err := auth.NewJwtBuilder(config.App.Server.Key).GenerateToken(uc)
 		if err != nil {
 			slog.Error("create token err", "err", err)
 			dto.NewJsonResp(ctx).Fail(dto.ServerError)
 			return
 		}
 		ctx.Header("Authorization", token)
+		ctx.Set("user", &uc)
 		dto.NewJsonResp(ctx).Success(map[string]int{
 			"id": domainUser.Id,
 		})

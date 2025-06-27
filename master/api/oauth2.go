@@ -11,6 +11,7 @@ import (
 	"go-job/internal/model"
 	"go-job/internal/pkg/auth"
 	"go-job/master/pkg/config"
+	"go-job/master/pkg/middleware"
 	"go-job/master/pkg/oauth2/github"
 	"go-job/master/pkg/oauth2/qq"
 	"go-job/master/service"
@@ -62,10 +63,11 @@ func (a *OAuth2Api) registryOAuth2Svc() {
 func (a *OAuth2Api) RegisterRoutes(group *gin.RouterGroup) {
 	ouath2Group := group.Group("/oauth2")
 	{
-		ouath2Group.GET("/github/authurl", a.GithubAuthURL)
+		ouath2Group.GET("/github/authurl", middleware.OperationLog(middleware.OperationDescOAuth2GithubAuthURL),
+			a.GithubAuthURL)
 		ouath2Group.Any("/github/callback", a.GithubCallback)
 
-		ouath2Group.GET("/qq/authurl", a.QQAuthURL)
+		ouath2Group.GET("/qq/authurl", middleware.OperationLog(middleware.OperationDescOAuth2QQAuthURL), a.QQAuthURL)
 		ouath2Group.Any("/qq/callback", a.QQCallback)
 	}
 }

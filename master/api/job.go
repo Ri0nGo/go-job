@@ -10,6 +10,7 @@ import (
 	"go-job/internal/pkg/utils"
 	"go-job/internal/upload"
 	"go-job/master/pkg/config"
+	"go-job/master/pkg/middleware"
 	"go-job/master/service"
 	"gorm.io/gorm"
 	"log/slog"
@@ -36,11 +37,11 @@ func (a *JobApi) RegisterRoutes(group *gin.RouterGroup) {
 	{
 		jobGroup.GET("", a.GetJobList)
 		jobGroup.GET("/:id", a.GetJob)
-		jobGroup.POST("/add", a.AddJob)
-		jobGroup.PUT("/update", a.UpdateJob)
-		jobGroup.DELETE("/:id", a.DeleteJob)
-		jobGroup.POST("/upload", a.UploadFile)
-		jobGroup.GET("/download", a.DownloadFile)
+		jobGroup.POST("/add", middleware.OperationLog(middleware.OperationDescAddJob), a.AddJob)
+		jobGroup.PUT("/update", middleware.OperationLog(middleware.OperationDescUpdateJob), a.UpdateJob)
+		jobGroup.DELETE("/:id", middleware.OperationLog(middleware.OperationDescDeleteJob), a.DeleteJob)
+		jobGroup.POST("/upload", middleware.OperationLog(middleware.OperationDescUploadFile), a.UploadFile)
+		jobGroup.GET("/download", middleware.OperationLog(middleware.OperationDescDownloadFile), a.DownloadFile)
 	}
 }
 

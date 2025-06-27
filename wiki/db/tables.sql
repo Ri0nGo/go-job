@@ -79,7 +79,7 @@ CREATE TABLE `user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- 身份认证表
-CREATE TABLE `go-job`.`无标题`  (
+CREATE TABLE `go-job`.`auth_identity`  (
     `id` int NOT NULL AUTO_INCREMENT,
     `user_id` int NOT NULL,
     `type` smallint NOT NULL COMMENT '授权类型, 1:github',
@@ -90,3 +90,22 @@ CREATE TABLE `go-job`.`无标题`  (
     PRIMARY KEY (`id`),
     INDEX `idx_type_identity`(`type`, `identity`) COMMENT '类型和身份标识唯一'
 );
+
+
+-- 操作记录表
+
+create table sys_opt_log
+(
+    id           bigint NOT NULL auto_increment primary key,
+    user_id      int          null,
+    client_ip    varchar(45)  null,
+    method       varchar(8)   null,
+    UA           text         null,
+    URL          varchar(256) null,
+    status_code  int          null,
+    request      text         null comment '请求入参',
+    response     text         null comment '请求响应',
+    title        varchar(48)  null comment '操作标题',
+    created_time datetime     null
+);
+

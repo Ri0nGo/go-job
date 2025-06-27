@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go-job/internal/dto"
 	"go-job/internal/model"
+	"go-job/master/pkg/middleware"
 	"go-job/master/service"
 	"gorm.io/gorm"
 	"log/slog"
@@ -27,10 +28,10 @@ func (a *NodeApi) RegisterRoutes(group *gin.RouterGroup) {
 	{
 		nodeGroup.GET("", a.GetNodeList)
 		nodeGroup.GET("/:id", a.GetNode)
-		nodeGroup.POST("/add", a.AddNode)
-		nodeGroup.PUT("/update", a.UpdateNode)
-		nodeGroup.DELETE("/:id", a.DeleteNode)
-		nodeGroup.POST("/install_ref", a.InstallRef)
+		nodeGroup.POST("/add", middleware.OperationLog(middleware.OperationDescAddNode), a.AddNode)
+		nodeGroup.PUT("/update", middleware.OperationLog(middleware.OperationDescUpdateNode), a.UpdateNode)
+		nodeGroup.DELETE("/:id", middleware.OperationLog(middleware.OperationDescDeleteNode), a.DeleteNode)
+		nodeGroup.POST("/install_ref", middleware.OperationLog(middleware.OperationDescNodeInstallRef), a.InstallRef)
 		nodeGroup.GET("/:id/info", a.NodeInfo)
 	}
 }
