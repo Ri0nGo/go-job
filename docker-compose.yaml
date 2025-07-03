@@ -6,6 +6,8 @@ services:
       - /etc/localtime:/etc/localtime
       - /root/yamls/go-job/node.yaml:/app/config/node.yaml
       - /data/docker/go-job-node-py/data:/app/data
+    environment:
+      - deepseek-key=sk-xxxx
     networks:
       - go-job-net
     restart: unless-stopped
