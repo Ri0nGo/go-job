@@ -50,7 +50,7 @@ func (f *FileExecutor) AfterExecute(err error) {
 
 func (f *FileExecutor) buildJobExecResult(output string, err error) model.JobExecResult {
 	runes := []rune(output)
-	if len(output) > defaultOutputLen {
+	if len(runes) > defaultOutputLen {
 		output = string(runes[:defaultOutputLen-3]) + "..."
 	}
 	result := model.JobExecResult{
