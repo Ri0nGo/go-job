@@ -4,6 +4,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"go-job/internal/model"
 	"go-job/internal/pkg/auth"
+	"log/slog"
 	"sync"
 	"time"
 )
@@ -47,6 +48,8 @@ func RefreshToken() error {
 			return err
 		}
 		jt.token = token
+		slog.Info("refresh token success", "token", jt.token,
+			"expire_time", jt.ExpireTime, "refresh_time", jt.RefreshTime)
 	}
 	return nil
 }
