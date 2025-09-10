@@ -13,18 +13,18 @@ import (
 	"time"
 )
 
-type JobHandler struct {
+type JobApi struct {
 	JobService service.IJobService
 }
 
-func NewJobHandler(jobService service.IJobService) *JobHandler {
-	return &JobHandler{
+func NewJobApi(jobService service.IJobService) *JobApi {
+	return &JobApi{
 		JobService: jobService,
 	}
 }
 
 // RegisterRoutes 注册job相关的路由, 遵循restful 风格
-func (h *JobHandler) RegisterRoutes(server *gin.RouterGroup) {
+func (h *JobApi) RegisterRoutes(server *gin.RouterGroup) {
 	jh := server.Group("/jobs")
 	jh.POST("/add", h.AddJob)
 	jh.DELETE("/:id", h.DeleteJob)
@@ -35,7 +35,7 @@ func (h *JobHandler) RegisterRoutes(server *gin.RouterGroup) {
 }
 
 // AddJob 添加任务
-func (h *JobHandler) AddJob(ctx *gin.Context) {
+func (h *JobApi) AddJob(ctx *gin.Context) {
 	var req dto.ReqNodeJob
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		slog.Error("add job bind json err:", "err", err)
@@ -53,7 +53,7 @@ func (h *JobHandler) AddJob(ctx *gin.Context) {
 	dto.NewJsonResp(ctx).Success()
 }
 
-func (h *JobHandler) DeleteJob(ctx *gin.Context) {
+func (h *JobApi) DeleteJob(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -65,7 +65,7 @@ func (h *JobHandler) DeleteJob(ctx *gin.Context) {
 	dto.NewJsonResp(ctx).Success()
 }
 
-func (h *JobHandler) UpdateJob(ctx *gin.Context) {
+func (h *JobApi) UpdateJob(ctx *gin.Context) {
 	var req dto.ReqNodeJob
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
@@ -81,7 +81,7 @@ func (h *JobHandler) UpdateJob(ctx *gin.Context) {
 	dto.NewJsonResp(ctx).Success()
 }
 
-func (h *JobHandler) GetJob(ctx *gin.Context) {
+func (h *JobApi) GetJob(ctx *gin.Context) {
 	var req dto.ReqId
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
@@ -102,13 +102,13 @@ func (h *JobHandler) GetJob(ctx *gin.Context) {
 
 }
 
-func (h *JobHandler) GetJobList(ctx *gin.Context) {
+func (h *JobApi) GetJobList(ctx *gin.Context) {
 	dto.NewJsonResp(ctx).Success()
 }
 
 // UploadFile 接收文件
 // 接收master发送过来的文件，然后保存到当前节点中
-func (h *JobHandler) UploadFile(ctx *gin.Context) {
+func (h *JobApi) UploadFile(ctx *gin.Context) {
 	file, err := ctx.FormFile("file")
 	if err != nil {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)

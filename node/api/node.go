@@ -7,24 +7,24 @@ import (
 	"log/slog"
 )
 
-type NodeHandler struct {
+type NodeApi struct {
 	NodeService service.INodeService
 }
 
-func NewNodeHandler(NodService service.INodeService) *NodeHandler {
-	return &NodeHandler{
+func NewNodeApi(NodService service.INodeService) *NodeApi {
+	return &NodeApi{
 		NodeService: NodService,
 	}
 }
 
 // RegisterRoutes 注册job相关的路由, 遵循restful 风格
-func (h *NodeHandler) RegisterRoutes(server *gin.RouterGroup) {
+func (h *NodeApi) RegisterRoutes(server *gin.RouterGroup) {
 	server.POST("/install_ref", h.InstallRef)
 	server.GET("info", h.NodeInfo)
 }
 
 // InstallRef 安装依赖
-func (h *NodeHandler) InstallRef(ctx *gin.Context) {
+func (h *NodeApi) InstallRef(ctx *gin.Context) {
 	var req dto.ReqNodeRef
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		slog.Error("add Node bind json err:", "err", err)
@@ -45,7 +45,7 @@ func (h *NodeHandler) InstallRef(ctx *gin.Context) {
 	})
 }
 
-func (h *NodeHandler) NodeInfo(ctx *gin.Context) {
+func (h *NodeApi) NodeInfo(ctx *gin.Context) {
 	data := h.NodeService.GetNodeInfo(ctx.Request.Context())
 	dto.NewJsonResp(ctx).Success(data)
 }

@@ -26,7 +26,7 @@ type IJobService interface {
 type JobService struct {
 }
 
-func NewJobService() *JobService {
+func NewJobService() IJobService {
 	return &JobService{}
 }
 

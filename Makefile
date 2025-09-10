@@ -34,12 +34,17 @@ run-n:
 build-node:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./build/node/go-job-node cmd/master/master.go
 
-.PHONY: wire
-wire:
+.PHONY: wire-m
+wire-m:
 	wire gen master/pkg/ioc/wire.go
 
+
+.PHONY: wire-n
+wire-n:
+	wire gen node/pkg/ioc/wire.go
+
 .PHONY: run-wire-m
-run-wire-m: wire-gen
+run-wire-m: wire-m
 	@echo "wire than running $(APP_MASTER_NAME)..."
 	go run cmd/master/master.go
 

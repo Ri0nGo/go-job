@@ -3,10 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"go-job/node/pkg/auth"
 	"go-job/node/pkg/config"
-	"go-job/node/router"
+	"go-job/node/pkg/ioc"
+	"go-job/node/pkg/startup"
+	"log/slog"
 )
 
 func main() {
@@ -20,16 +21,18 @@ func main() {
 		panic(err)
 	}
 
-	beforeRunWeb()
-	runWeb()
+	RunApp()
 }
 
-func beforeRunWeb() {
+func beforeRunWeb(container *ioc.WebContainer) {
 	auth.InitJwtToken(config.App.Master.Key)
+	if err := startup.SyncJobFromMaster(container.JobSvc); err != nil {
+		slog.Error("sync job from master error", "err", err)
+	}
 }
 
-func runWeb() {
-	engine := gin.Default()
-	router.InitRouter(engine)
-	engine.Run(fmt.Sprintf("%s:%d", config.App.Server.Ip, config.App.Server.Port))
+func RunApp() {
+	container := ioc.InitWebServer()
+	beforeRunWeb(container)
+	container.Engine.Run(fmt.Sprintf("%s:%d", config.App.Server.Ip, config.App.Server.Port))
 }

@@ -28,7 +28,7 @@ type NodeService struct {
 	installRefHandlers map[model.NodeInstallRefType]func(ctx context.Context, info installRefInfo) (string, error)
 }
 
-func NewNodeService() *NodeService {
+func NewNodeService() INodeService {
 	s := &NodeService{
 		timeout: defaultTimeout,
 		// 返回对应的版本和错误
