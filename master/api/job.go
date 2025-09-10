@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go-job/internal/dto"
-	"go-job/internal/model"
 	"go-job/internal/pkg/utils"
 	"go-job/internal/upload"
 	"go-job/master/pkg/config"
@@ -73,7 +72,7 @@ func (a *JobApi) GetJob(ctx *gin.Context) {
 }
 
 func (a *JobApi) GetJobList(ctx *gin.Context) {
-	var page model.Page
+	var page dto.ReqJobList
 	if err := ctx.ShouldBindQuery(&page); err != nil {
 		dto.NewJsonResp(ctx).Fail(dto.ParamsError)
 		return

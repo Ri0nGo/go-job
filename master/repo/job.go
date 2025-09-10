@@ -15,6 +15,7 @@ type IJobRepo interface {
 	Update(*model.Job) error
 	Delete(id int) error
 	QueryListByUID(uid int, page model.Page) (model.Page, error)
+	QueryListByActive(uid int, page model.Page, active model.JobActiveType) (model.Page, error)
 	QuerySummary(uid int) ([]model.JobStatusCount, error)
 }
 
@@ -74,6 +75,11 @@ func (j *JobRepo) QueryByNodeId(nodeId int) ([]model.Job, error) {
 func (j *JobRepo) QueryListByUID(uid int, page model.Page) (model.Page, error) {
 	return paginate.PaginateListV2[model.Job](j.mysqlDB, page, func(db *gorm.DB) *gorm.DB {
 		return db.Where("user_id = ?", uid)
+	})
+}
+func (j *JobRepo) QueryListByActive(uid int, page model.Page, active model.JobActiveType) (model.Page, error) {
+	return paginate.PaginateListV2[model.Job](j.mysqlDB, page, func(db *gorm.DB) *gorm.DB {
+		return db.Where("user_id = ? AND active = ?", uid, active)
 	})
 }
 

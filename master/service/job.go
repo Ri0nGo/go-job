@@ -28,7 +28,7 @@ const (
 
 type IJobService interface {
 	GetJob(uid, id int) (model.Job, error)
-	GetJobList(uid int, page model.Page) (model.Page, error)
+	GetJobList(uid int, req dto.ReqJobList) (model.Page, error)
 	AddJob(job dto.ReqJob) error
 	DeleteJob(uid, id int) error
 	UpdateJob(job dto.ReqJob) error
@@ -57,9 +57,17 @@ func (j *JobService) hasPermission(uid int, job *model.Job) bool {
 	return uid == job.UserId
 }
 
-func (j *JobService) GetJobList(uid int, page model.Page) (model.Page, error) {
+func (j *JobService) GetJobList(uid int, req dto.ReqJobList) (model.Page, error) {
 	// 查询jobs
-	p, err := j.JobRepo.QueryListByUID(uid, page)
+	var (
+		p   model.Page
+		err error
+	)
+	if req.Active != nil {
+		p, err = j.JobRepo.QueryListByActive(uid, req.Page, *req.Active)
+	} else {
+		p, err = j.JobRepo.QueryListByUID(uid, req.Page)
+	}
 	if err != nil {
 		return p, err
 	}

@@ -54,6 +54,11 @@ type ReqJob struct {
 	FileKey        string               `json:"file_key"`  // 文件key
 }
 
+type ReqJobList struct {
+	model.Page
+	Active *model.JobActiveType `json:"active" form:"active"`
+}
+
 type RespJob struct {
 	Id             int                  `json:"id"`
 	NodeID         int                  `json:"node_id"`
