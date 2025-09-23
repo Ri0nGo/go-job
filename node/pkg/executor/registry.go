@@ -20,6 +20,7 @@ func GetExecutor(execType model.ExecType) (ExecutorFactory, bool) {
 
 func init() {
 	Register(model.ExecTypeFile, func(req dto.ReqNodeJob) IExecutor {
-		return NewFileExecutor(req.Id, req.Name, req.Filename)
+		executor := NewFileExecutor(req.Id, req.Name, req.Filename)
+		return NewRetryExecutor(executor, 3)
 	})
 }

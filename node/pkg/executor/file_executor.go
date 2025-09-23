@@ -29,9 +29,7 @@ func (f *FileExecutor) Run() {
 	f.BeforeExecute()
 	output, err := f.Execute()
 	f.AfterExecute(err)
-	if f.onResultChange != nil {
-		f.onResultChange(f.buildJobExecResult(output, err))
-	}
+	f.ResultCallback(output, err)
 }
 
 func (f *FileExecutor) BeforeExecute() {
@@ -86,6 +84,12 @@ func (f *FileExecutor) Execute() (string, error) {
 
 func (f *FileExecutor) OnResultChange(fn func(result model.JobExecResult)) {
 	f.onResultChange = fn
+}
+
+func (f *FileExecutor) ResultCallback(output string, err error) {
+	if f.onResultChange != nil {
+		f.onResultChange(f.buildJobExecResult(output, err))
+	}
 }
 
 func NewFileExecutor(id int, name, fileName string) *FileExecutor {
