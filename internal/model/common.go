@@ -7,4 +7,7 @@ type Page struct {
 	Data     any    `json:"data" form:"data"`
 	Order    string `json:"order" form:"order"`
 	Sort     string `json:"sort" form:"sort"`
+
+	// ext
+	UnlimitedPageSize bool `json:"-" form:"-"` // 不限制分页
 }

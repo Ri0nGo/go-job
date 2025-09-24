@@ -97,7 +97,7 @@ func (j *JobService) GetJobList(uid int, req dto.ReqJobList) (model.Page, error)
 	// model.Job to dto.RespJob
 	for _, v := range jobs {
 		nodeIds = append(nodeIds, v.NodeID)
-		data = append(data, dto.RespJob{
+		respJob := dto.RespJob{
 			Id:             v.Id,
 			Name:           v.Name,
 			ExecType:       v.ExecType,
@@ -112,8 +112,12 @@ func (j *JobService) GetJobList(uid int, req dto.ReqJobList) (model.Page, error)
 			NotifyStrategy: v.Internal.Notify.NotifyStrategy,
 			NotifyMark:     v.Internal.Notify.NotifyMark,
 			UserId:         v.UserId,
-			//HasPermission: j.hasPermission(uid, &v),  // note 用户只显示自己创建的任务，后续管理员管理所有的任务
-		})
+		}
+
+		if uid == model.InternalDefaultUser {
+			respJob.UUIDFileName = v.Internal.FileMeta.UUIDFileName
+		}
+		data = append(data, respJob)
 	}
 	p.Data = data
 	return p, nil

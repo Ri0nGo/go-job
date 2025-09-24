@@ -107,3 +107,15 @@ func ParseResponse(resp *resty.Response) (dto.Response, error) {
 	}
 	return commResp, nil
 }
+
+func ParseResponseWith[T any](resp *resty.Response) (*T, error) {
+	if resp == nil {
+		return nil, errors.New("resp is nil")
+	}
+
+	var commResp T
+	if err := json.Unmarshal(resp.Bytes(), &commResp); err != nil {
+		return nil, err
+	}
+	return &commResp, nil
+}

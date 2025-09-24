@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+const InternalDefaultUser = -1
+
 type AuthType uint8
 
 func (a AuthType) String() string {

@@ -78,9 +78,16 @@ func (j *JobRepo) QueryListByUID(uid int, page model.Page) (model.Page, error) {
 	})
 }
 func (j *JobRepo) QueryListByActive(uid int, page model.Page, active model.JobActiveType) (model.Page, error) {
-	return paginate.PaginateListV2[model.Job](j.mysqlDB, page, func(db *gorm.DB) *gorm.DB {
-		return db.Where("user_id = ? AND active = ?", uid, active)
-	})
+	if uid == model.InternalDefaultUser {
+		page.UnlimitedPageSize = true
+		return paginate.PaginateListV2[model.Job](j.mysqlDB, page, func(db *gorm.DB) *gorm.DB {
+			return db.Where("active = ?", active)
+		})
+	} else {
+		return paginate.PaginateListV2[model.Job](j.mysqlDB, page, func(db *gorm.DB) *gorm.DB {
+			return db.Where("user_id = ? AND active = ?", uid, active)
+		})
+	}
 }
 
 func (j *JobRepo) QuerySummary(uid int) ([]model.JobStatusCount, error) {

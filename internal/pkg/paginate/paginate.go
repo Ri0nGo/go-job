@@ -56,13 +56,15 @@ func PaginateList[T any](db *gorm.DB, page model.Page) (model.Page, error) {
 }
 
 func PaginateListV2[T any](db *gorm.DB, page model.Page, fns ...func(*gorm.DB) *gorm.DB) (model.Page, error) {
-	if page.PageNum < 1 {
-		page.PageNum = defaultPageNum
-	}
-	if page.PageSize < 1 {
-		page.PageSize = defaultPageSize
-	} else if page.PageSize > maxPageSize {
-		page.PageSize = maxPageSize
+	if !page.UnlimitedPageSize {
+		if page.PageNum < 1 {
+			page.PageNum = defaultPageNum
+		}
+		if page.PageSize < 1 {
+			page.PageSize = defaultPageSize
+		} else if page.PageSize > maxPageSize {
+			page.PageSize = maxPageSize
+		}
 	}
 
 	var (

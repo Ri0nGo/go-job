@@ -68,6 +68,7 @@ type RespJob struct {
 	NodeName       string               `json:"node_name"`
 	Active         model.JobActiveType  `json:"active"`
 	FileName       string               `json:"filename"`
+	UUIDFileName   string               `json:"uuid_file_name"`
 	CreatedTime    time.Time            `json:"created_time"`
 	NotifyStatus   model.NotifyStatus   `json:"notify_status"`   // 通知启停
 	NotifyType     model.NotifyType     `json:"notify_type"`     // 通知类型，邮件，短信等

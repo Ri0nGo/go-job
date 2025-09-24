@@ -34,4 +34,7 @@ var NodeJobAPI = &JobAPI{
 	},
 }
 
-var JobRecordCreateAPI = "/api/go-job/job_records/add"
+var (
+	JobRecordCreateAPI = "/api/go-job/job_records/add"
+	JobListAPI         = "/api/go-job/jobs"
+)
