@@ -65,7 +65,10 @@ func SyncJobFromMaster(jobSvc service.IJobService) error {
 			Filename: job.UUIDFileName,
 		}); err != nil {
 			slog.Error("sync job failed", "id", job.Id, "name", job.Name, "err", err)
+			continue
 		}
+		slog.Info("sync job success", "id", job.Id, "name", job.Name)
+
 	}
 	return nil
 }
