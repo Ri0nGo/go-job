@@ -9,7 +9,7 @@ RUN go env -w GOPROXY=https://goproxy.cn,direct && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app/go-job-node cmd/node/node.go
 
 
-FROM python:3.13.3-alpine3.21
+FROM python:3.13.3-slim
 
 ARG PIP_NAME=pip.txt
 ARG APP_ROOT=/app/
