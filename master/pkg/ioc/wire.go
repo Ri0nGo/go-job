@@ -48,6 +48,7 @@ func InitWebServer() *WebContainer {
 		service.NewNodeService,
 		service.NewEmailCodeService,
 		service.NewUserService,
+		service.NewIAMOAuthService,
 		service.NewDashboardService,
 
 		// api
@@ -55,6 +56,7 @@ func InitWebServer() *WebContainer {
 		api.NewJobRecordApi,
 		api.NewNodeApi,
 		api.NewUserApi,
+		api.NewIAMOAuthApi,
 		api.NewDashboardApi,
 		api.NewOAuth2Api,
 

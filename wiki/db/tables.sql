@@ -13,6 +13,16 @@ CREATE TABLE `job` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+CREATE TABLE `job_once` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `name` varchar(128) NOT NULL COMMENT '任务名称',
+    `exec_type` smallint NOT NULL COMMENT '执行类型 1: shell; 2: http; 3:file',
+    `active` smallint DEFAULT '1' COMMENT '启用状态 1启用；2停用',
+    `status`        TINYINT DEFAULT 0 COMMENT '0待执行 1执行中 2成功 3失败 4已取消',
+    `retry_count`   TINYINT DEFAULT 0 COMMENT '重试次数',
+    `max_retry`     TINYINT DEFAULT 3 COMMENT '最大重试次数',
+
+)
 -- 任务记录表
 CREATE TABLE `job_record` (
     `id` int NOT NULL AUTO_INCREMENT,

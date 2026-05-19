@@ -68,3 +68,9 @@ CREATE TABLE `auth_identity` (
 alter table `user`
     add login_time datetime null;
 ```
+
+## 2026-05-19 修改password字段属性
+```mysql
+alter table `user`
+    modify password varchar(128) null;
+```

@@ -8,6 +8,7 @@ type Application struct {
 	MySQL   MySQL
 	Redis   Redis
 	SMTP    map[string]SMTPProvider   `mapstructure:"smtp"`
+	OAuth   OAuth                     `mapstructure:"oauth"`
 	OAuth2  map[string]OAuth2Provider `mapstructure:"oauth2"`
 	Metrics Metrics
 }
@@ -65,4 +66,15 @@ type OAuth2Provider struct {
 	ClientSecret     string `mapstructure:"client_secret"` // 泛指Secret, 可以是APPKey
 	RedirectURL      string `mapstructure:"redirect_url"`
 	RedirectFrontUrl string `mapstructure:"redirect_front_url"`
+}
+
+type OAuth struct {
+	Enabled        bool     `mapstructure:"enabled"`
+	AuthBaseURL    string   `mapstructure:"auth_base_url"`
+	ClientID       string   `mapstructure:"client_id"`
+	ClientSecret   string   `mapstructure:"client_secret"`
+	RedirectURI    string   `mapstructure:"redirect_uri"`
+	Scopes         []string `mapstructure:"scopes"`
+	Scope          string   `mapstructure:"scope"`
+	TimeoutSeconds int      `mapstructure:"timeout_seconds"`
 }

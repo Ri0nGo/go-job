@@ -16,6 +16,8 @@ func (a AuthType) String() string {
 		return "github"
 	case AuthTypeQQ:
 		return "qq"
+	case AuthTypeIAM:
+		return "iam"
 	default:
 		return "unknown(" + strconv.Itoa(int(a)) + ")"
 	}
@@ -24,6 +26,7 @@ func (a AuthType) String() string {
 const (
 	AuthTypeGithub AuthType = iota + 1
 	AuthTypeQQ
+	AuthTypeIAM
 )
 
 type Auth2Scene string

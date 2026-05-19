@@ -51,15 +51,15 @@ func (a *UserApi) RegisterRoutes(group *gin.RouterGroup) {
 		userGroup.POST("/add", middleware.OperationLog(middleware.OperationDescAddUser), a.AddUser)
 		userGroup.PUT("/update", middleware.OperationLog(middleware.OperationDescUpdateUser), a.UpdateUser)
 		userGroup.DELETE("/:id", middleware.OperationLog(middleware.OperationDescDeleteUser), a.DeleteUser)
-		userGroup.POST("/login", middleware.OperationLog(middleware.OperationDescLogin), a.Login)
+		// userGroup.POST("/login", middleware.OperationLog(middleware.OperationDescLogin), a.Login)
 		userGroup.GET("/security", a.Security)
 
 		userGroup.POST("/bind/email/code_send", middleware.OperationLog(middleware.OperationDescSendEmailCode), a.BindEmailCodeSend)
 		userGroup.POST("/bind/email", middleware.OperationLog(middleware.OperationDescBindEmail), a.BindEmail)
 
-		userGroup.POST("/oauth2/bind", middleware.OperationLog(middleware.OperationDescOAuth2Bind), a.OAuth2Bind) // 通过用户名密码关联第三方账号
-		userGroup.POST("/oauth2/unbind", middleware.OperationLog(middleware.OperationDescOAuth2UnBind), a.OAuth2UnBind)
-		userGroup.POST("/oauth2/code", middleware.OperationLog(middleware.OperationDescOAuth2Login), a.OAuth2Code)
+		// userGroup.POST("/oauth2/bind", middleware.OperationLog(middleware.OperationDescOAuth2Bind), a.OAuth2Bind) // 通过用户名密码关联第三方账号
+		// userGroup.POST("/oauth2/unbind", middleware.OperationLog(middleware.OperationDescOAuth2UnBind), a.OAuth2UnBind)
+		// userGroup.POST("/oauth2/code", middleware.OperationLog(middleware.OperationDescOAuth2Login), a.OAuth2Code)
 	}
 }
 

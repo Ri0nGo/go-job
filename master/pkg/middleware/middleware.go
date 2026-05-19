@@ -19,13 +19,15 @@ func NewGinMiddlewares(cmd redis.Cmdable) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		cors(),
 		NewLoginJwtMWBuilder(config.App.Server.Key).SkipPaths([]string{
-			"/api/go-job/users/login",
-			"/api/go-job/oauth2/github/authurl",
-			"/api/go-job/oauth2/github/callback",
-			"/api/go-job/oauth2/qq/authurl",
-			"/api/go-job/oauth2/qq/callback",
-			"/api/go-job/users/oauth2/code",
-			"/api/go-job/users/oauth2/bind",
+			// "/api/go-job/users/login",
+			"/api/go-job/oauth/info",
+			"/api/go-job/oauth/login",
+			// "/api/go-job/oauth2/github/authurl",
+			// "/api/go-job/oauth2/github/callback",
+			// "/api/go-job/oauth2/qq/authurl",
+			// "/api/go-job/oauth2/qq/callback",
+			// "/api/go-job/users/oauth2/code",
+			// "/api/go-job/users/oauth2/bind",
 		}).Builder(),
 		iplimiter.NewIpLimiter(redisLimiter).Builder(),
 	}

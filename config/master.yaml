@@ -40,6 +40,16 @@ metrics:
     interval: 10
     timeout: 2
 
+oauth:
+  enabled: false
+  auth_base_url: "http://localhost:8080"
+  client_id: "xx"
+  client_secret: "xx"
+  redirect_uri: "http://localhost:3000/#/oauth/callback"
+  scopes:
+    - basic
+  timeout_seconds: 3
+
 
 oauth2:
   github:

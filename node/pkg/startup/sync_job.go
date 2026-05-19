@@ -11,7 +11,6 @@ import (
 	"go-job/node/pkg/config"
 	"go-job/node/service"
 	"log/slog"
-	"strconv"
 	"time"
 )
 
@@ -42,7 +41,6 @@ func SyncJobFromMaster(jobSvc service.IJobService) error {
 	}
 	url := fmt.Sprintf("http://%s%s", config.App.Master.Address, paths.JobListAPI)
 	params := map[string]string{
-		"active":    strconv.Itoa(int(model.JobStart)),
 		"page_num":  "1",
 		"page_size": "9999",
 	}

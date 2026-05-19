@@ -11,6 +11,7 @@ func NewWebRouter(mdls []gin.HandlerFunc,
 	nodeApi *api.NodeApi,
 	userApi *api.UserApi,
 	dashboardApi *api.DashboardApi,
+	iamOAuthApi *api.IAMOAuthApi,
 	oauth2Api *api.OAuth2Api) *gin.Engine {
 	server := gin.Default()
 	server.Use(mdls...)
@@ -20,6 +21,7 @@ func NewWebRouter(mdls []gin.HandlerFunc,
 	nodeApi.RegisterRoutes(group)
 	userApi.RegisterRoutes(group)
 	dashboardApi.RegisterRoutes(group)
-	oauth2Api.RegisterRoutes(group)
+	iamOAuthApi.RegisterRoutes(group)
+	// oauth2Api.RegisterRoutes(group)
 	return server
 }

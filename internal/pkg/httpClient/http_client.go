@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"go-job/internal/dto"
 	"os"
 	"path/filepath"
@@ -118,4 +119,28 @@ func ParseResponseWith[T any](resp *resty.Response) (*T, error) {
 		return nil, err
 	}
 	return &commResp, nil
+}
+
+// PostJsonV2[T any] 将请求和响应通过泛型组合在一起
+func PostJsonV2[T any](ctx context.Context, url string, headers map[string]string, body any, timeout time.Duration) (T, error) {
+	var zero T
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	resp, err := resty.New().R().
+		SetContext(ctx).
+		SetHeaders(headers).
+		SetBody(body).
+		Post(url)
+	if err != nil {
+		return zero, fmt.Errorf("http request failed: %w", err)
+	}
+
+	// 解析响应
+	var result T
+	if err := json.Unmarshal(resp.Bytes(), &result); err != nil {
+		return zero, fmt.Errorf("unmarshal failed: %w, body=%s", err, string(resp.Bytes()))
+	}
+
+	return result, nil
 }
