@@ -39,7 +39,7 @@ func (a *DashboardApi) GetDashboardSummary(ctx *gin.Context) {
 
 	summary, err := a.dashboardService.GetDataSummary(uc.Uid)
 	if err != nil {
-		slog.Error("get summary error", err.Error())
+		slog.Error("get summary error", "err", err)
 	}
 
 	dto.NewJsonResp(ctx).Success(summary)
@@ -61,7 +61,7 @@ func (a *DashboardApi) GetDashboardChart(ctx *gin.Context) {
 
 	data, err := a.dashboardService.GetChartData(req, uc.Uid)
 	if err != nil {
-		slog.Error("get chart data error", err.Error())
+		slog.Error("get chart data error", "err", err)
 		if errors.Is(err, service.ErrUnSupportChartKey) {
 			dto.NewJsonResp(ctx).Fail(dto.DashboardChartFailed, err)
 			return
