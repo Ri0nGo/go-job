@@ -3,7 +3,7 @@ module go-job
 go 1.25.0
 
 require (
-	github.com/Ri0nGo/gokit v0.0.7
+	github.com/Ri0nGo/gokit v0.0.8
 	github.com/dlclark/regexp2 v1.11.5
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-sql-driver/mysql v1.9.1
