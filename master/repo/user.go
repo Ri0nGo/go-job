@@ -4,6 +4,7 @@ import (
 	"errors"
 	"go-job/internal/model"
 	"go-job/internal/pkg/paginate"
+	"go-job/internal/pkg/utils"
 	"gorm.io/gorm"
 	"time"
 )
@@ -88,7 +89,7 @@ func (j *UserRepo) QueryUserSecurity(uid int) (model.UserAuthInfo, error) {
 	return model.UserAuthInfo{
 		ID:       user.Id,
 		Username: user.Username,
-		Email:    *user.Email,
+		Email:    utils.PtrToVal(user.Email),
 		Auths:    auths,
 	}, nil
 
