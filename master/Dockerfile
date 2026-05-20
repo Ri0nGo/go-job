@@ -6,6 +6,7 @@ COPY . .
 
 RUN go env -w GOPROXY=https://goproxy.cn,direct && \
     go env -w GO111MODULE=on && \
+    go mod tidy && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app/go-job-master cmd/master/master.go
 
 
